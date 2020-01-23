@@ -1,0 +1,4 @@
+include ':app'
+include ':camera-library'
+include ':gles-library'
+//include ':codec-library'
