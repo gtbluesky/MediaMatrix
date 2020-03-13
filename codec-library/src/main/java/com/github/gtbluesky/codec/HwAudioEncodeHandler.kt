@@ -1,10 +1,10 @@
-package com.github.gtbluesky.codec.hardware
+package com.github.gtbluesky.codec
 
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
 
-class AudioEncodeHandler(looper: Looper) : Handler(looper) {
+class HwAudioEncodeHandler(looper: Looper) : Handler(looper) {
 
     companion object {
 

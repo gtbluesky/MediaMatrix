@@ -3,7 +3,6 @@ package com.github.gtbluesky.camera.render
 import android.content.Context
 import android.graphics.SurfaceTexture
 import android.opengl.GLES30
-import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
@@ -11,13 +10,14 @@ import android.util.Log
 import android.view.Surface
 import android.view.SurfaceHolder
 import com.github.gtbluesky.camera.engine.CameraEngine
-//import com.github.gtbluesky.codec.hardware.Encoder
+import com.github.gtbluesky.camera.engine.CameraParam
+import com.github.gtbluesky.codec.HwEncoder
 import com.github.gtbluesky.gles.egl.EglCore
 import com.github.gtbluesky.gles.egl.WindowSurface
 import com.github.gtbluesky.gles.util.BitmapUtil
 import com.github.gtbluesky.gles.util.GLHelper
 
-class RenderHandler(private val context: Context?, looper: Looper) :
+class RenderHandler(private val context: Context, looper: Looper) :
     Handler(looper), SurfaceTexture.OnFrameAvailableListener {
 
     private var eglCore: EglCore? = null
@@ -27,7 +27,7 @@ class RenderHandler(private val context: Context?, looper: Looper) :
     private var renderManager: RenderManager? = RenderManager()
     private val transformMatrix = FloatArray(16)
     private var isRecording = false
-//    private val encoder = Encoder()
+    private val encoder = HwEncoder()
 
     companion object {
         private val TAG = RenderHandler::class.java.simpleName
@@ -61,6 +61,8 @@ class RenderHandler(private val context: Context?, looper: Looper) :
         const val MSG_CHANGE_DYNAMIC_MAKEUP = 0x0e
         // 切换动态动态资源
         const val MSG_CHANGE_DYNAMIC_RESOURCE = 0x0f
+        // 开关闪关灯
+        const val MSG_TOGGLE_TORCH = 0x10
     }
 
     override fun handleMessage(msg: Message) {
@@ -79,7 +81,7 @@ class RenderHandler(private val context: Context?, looper: Looper) :
                 }
             }
             MSG_SURFACE_CHANGED -> {
-                surfaceChanged(msg.arg1, msg.arg2)
+                surfaceChanged()
             }
             MSG_SURFACE_DESTROYED -> {
                 surfaceDestroyed()
@@ -87,7 +89,7 @@ class RenderHandler(private val context: Context?, looper: Looper) :
             MSG_RENDER -> {
                 drawFrame()
                 if (isRecording) {
-//                    encoder.onFrameAvailable()
+                    encoder.onFrameAvailable()
                 }
             }
             MSG_SWITCH_CAMERA -> {
@@ -103,7 +105,14 @@ class RenderHandler(private val context: Context?, looper: Looper) :
                 finishRecording()
             }
             MSG_TAKE_PICTURE -> {
-                takePicture()
+                (msg.obj as? String)?.let {
+                    takePicture(it)
+                }
+            }
+            MSG_TOGGLE_TORCH -> {
+                (msg.obj as? Boolean)?.let {
+                    CameraEngine.getInstance().toggleTorch(it)
+                }
             }
         }
     }
@@ -121,13 +130,13 @@ class RenderHandler(private val context: Context?, looper: Looper) :
         textureId = GLHelper.createOESTexture()
         surfaceTexture = SurfaceTexture(textureId).also {
             it.setOnFrameAvailableListener(this)
-            CameraEngine.getInstance().startPreview(context!!, 720, 1280, it)
+            CameraEngine.getInstance().startPreview(context, it)
         }
 
     }
 
     private fun surfaceCreated(surfaceTexture: SurfaceTexture) {
-        eglCore = EglCore(null, EglCore.FLAG_RECORDABLE)
+        eglCore = EglCore(flags = EglCore.FLAG_RECORDABLE)
         windowSurface = WindowSurface(eglCore!!, surfaceTexture)
         windowSurface?.makeCurrent()
 
@@ -139,26 +148,29 @@ class RenderHandler(private val context: Context?, looper: Looper) :
         textureId = GLHelper.createOESTexture()
         this.surfaceTexture = SurfaceTexture(textureId).also {
             it.setOnFrameAvailableListener(this)
-            CameraEngine.getInstance().startPreview(context!!, 720, 1280, it)
+            CameraEngine.getInstance().startPreview(context, it)
         }
     }
 
     override fun onFrameAvailable(surfaceTexture: SurfaceTexture?) {
-        sendMessage(obtainMessage(
-            MSG_RENDER
-        ))
+        sendMessage(obtainMessage(MSG_RENDER))
     }
 
-    private fun surfaceChanged(width: Int, height: Int) {
+    private fun surfaceChanged() {
         windowSurface?.makeCurrent()
-        renderManager?.setDisplaySize(width, height)
+        renderManager?.setDisplaySize(
+            CameraParam.getInstance().viewWidth,
+            CameraParam.getInstance().viewHeight
+        )
     }
 
     private fun surfaceDestroyed() {
         windowSurface?.makeCurrent()
         renderManager?.release()
-        CameraEngine.getInstance().stopPreview()
-        CameraEngine.getInstance().destroy()
+        CameraEngine.getInstance().let {
+            it.stopPreview()
+            it.destroy()
+        }
         surfaceTexture?.release()
         surfaceTexture = null
         windowSurface?.release()
@@ -179,33 +191,45 @@ class RenderHandler(private val context: Context?, looper: Looper) :
     }
 
     private fun switchCamera() {
-        CameraEngine.getInstance().switchCamera(context!!, surfaceTexture!!)
+        surfaceTexture?.let {
+            CameraEngine.getInstance().switchCamera(context, it)
+        }
     }
 
     private fun startRecording() {
-        eglCore?.apply {
-//            encoder.start(720, 1080, eglContext)
+        eglCore?.let {
+            encoder.start(720, 1080, it.eglContext)
         }
         isRecording = true
     }
 
     private fun stopRecording() {
-//        encoder.stop()
+        encoder.stop()
         isRecording = false
     }
 
     private fun finishRecording() {
         if (!isRecording) {
-//            encoder.finish()
+            encoder.finish()
         }
     }
 
-    private fun takePicture() {
+    private fun takePicture(filePath: String) {
         windowSurface?.apply {
-            val buffer = GLHelper.getCurrentFrame(getWidth(), getHeight())
-            val path = Environment.getExternalStorageDirectory().absolutePath + "/pic.jpg"
-            BitmapUtil.saveBitmap(path, buffer, getWidth(), getHeight())
-            Log.d(TAG, "照片已保存")
+            val buffer = GLHelper.getCurrentFrame(
+                getWidth(),
+                getHeight()
+            )
+            CameraParam.getInstance().let {
+                BitmapUtil.saveBitmap(
+                    filePath,
+                    buffer,
+                    it.previewWidth.toFloat() / getWidth(),
+                    getWidth(),
+                    getHeight()
+                )
+            }
+            Log.d(TAG, "照片保存在：$filePath")
         }
     }
 

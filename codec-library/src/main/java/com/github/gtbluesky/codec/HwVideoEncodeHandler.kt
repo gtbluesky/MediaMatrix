@@ -1,4 +1,4 @@
-package com.github.gtbluesky.codec.hardware
+package com.github.gtbluesky.codec
 
 import android.opengl.EGLContext
 import android.opengl.GLES30
@@ -12,7 +12,7 @@ import com.github.gtbluesky.gles.filter.NormalFilter
 import com.github.gtbluesky.gles.util.GLHelper
 import java.nio.FloatBuffer
 
-class VideoEncodeHandler(looper: Looper, private val encoder: Encoder) : Handler(looper) {
+class HwVideoEncodeHandler(looper: Looper, private val hwEncoder: HwEncoder) : Handler(looper) {
 
     private var eglCore: EglCore? = null
     private var windowSurface: WindowSurface? = null
@@ -26,7 +26,7 @@ class VideoEncodeHandler(looper: Looper, private val encoder: Encoder) : Handler
     private var isEncoding = false
 
     companion object {
-        private val TAG = VideoEncodeHandler::class.java.simpleName
+        private val TAG = HwVideoEncodeHandler::class.java.simpleName
         // 渲染
         const val MSG_RENDER = 0x04
         // 开始编码
@@ -78,7 +78,7 @@ class VideoEncodeHandler(looper: Looper, private val encoder: Encoder) : Handler
         }
         eglCore = EglCore(eglContext, EglCore.FLAG_RECORDABLE)
         if (windowSurface == null) {
-            windowSurface = WindowSurface(eglCore!!, encoder.inputSurface!!, true)
+            windowSurface = WindowSurface(eglCore!!, hwEncoder.inputSurface!!, true)
         } else {
             windowSurface?.recreate(eglCore!!)
         }

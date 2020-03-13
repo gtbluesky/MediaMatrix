@@ -54,11 +54,10 @@ class PreviewRenderer(private val context: Context) {
         }
     }
 
-    fun changePreviewSize(width: Int, height: Int) {
+    fun changePreviewSize() {
         renderHandler.apply {
             sendMessage(obtainMessage(
-                RenderHandler.MSG_SURFACE_CHANGED,
-                width, height
+                RenderHandler.MSG_SURFACE_CHANGED
             ))
         }
     }
@@ -87,20 +86,21 @@ class PreviewRenderer(private val context: Context) {
         }
     }
 
-    fun takePicture() {
+    fun takePicture(filePath: String) {
         renderHandler.apply {
             sendMessage(obtainMessage(
-                RenderHandler.MSG_TAKE_PICTURE
+                RenderHandler.MSG_TAKE_PICTURE,
+                filePath
             ))
         }
     }
 
-//    fun toggleTorch(toggle: Boolean) {
-//        renderHandler.apply {
-//            sendMessage(obtainMessage(
-//                RenderHandler.MSG_,
-//                toggle
-//            ))
-//        }
-//    }
+    fun toggleTorch(turnOn: Boolean) {
+        renderHandler.apply {
+            sendMessage(obtainMessage(
+                RenderHandler.MSG_TOGGLE_TORCH,
+                turnOn
+            ))
+        }
+    }
 }

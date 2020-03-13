@@ -22,10 +22,6 @@ class CameraEngine private constructor() {
     private var backParams: Camera.Parameters? = null
     private val cameraParam = CameraParam.getInstance()
 
-    private val sizeComparator = Comparator<Camera.Size> { o1, o2 ->
-        (o1.width * o1.height - o2.width * o2.height).sign
-    }
-
     init {
         val cameraNum = Camera.getNumberOfCameras()
         for (cameraId in 0 until cameraNum) {
@@ -47,14 +43,10 @@ class CameraEngine private constructor() {
     private fun openCamera() {
         camera = Camera.open(cameraParam.cameraId)
         val cameraParams = getCameraParams()
-        val previewSize = getOptimalSize(
-            cameraParams.supportedPreviewSizes,
-            cameraParam.expectWidth,
-            cameraParam.expectHeight
+        val previewSize = cameraParam.setPreviewSize(
+            cameraParams.supportedPreviewSizes
         )
-        cameraParam.previewWidth = previewSize.width
-        cameraParam.previewHeight = previewSize.height
-        val pictureSize = getOptimalSize(
+        val pictureSize = CameraParam.getOptimalSize(
             cameraParams.supportedPictureSizes,
             cameraParam.expectWidth,
             cameraParam.expectHeight
@@ -84,12 +76,8 @@ class CameraEngine private constructor() {
 
     fun startPreview(
         context: Context,
-        width: Int,
-        height: Int,
         surfaceTexture: SurfaceTexture
     ) {
-        cameraParam.viewWidth = width
-        cameraParam.viewHeight = height
         openCamera()
         camera?.apply {
             setPreviewTexture(surfaceTexture)
@@ -153,7 +141,7 @@ class CameraEngine private constructor() {
             else -> CameraParam.FRONT_CAMERA_ID
         }
         closeCamera()
-        startPreview(context, cameraParam.viewWidth, cameraParam.viewHeight, surfaceTexture)
+        startPreview(context, surfaceTexture)
     }
 
     fun toggleTorch(toggle: Boolean) {
@@ -168,10 +156,19 @@ class CameraEngine private constructor() {
 
     }
 
-    fun changeResolution(context: Context, resolutionType: ResolutionType, surfaceTexture: SurfaceTexture) {
-        cameraParam.setResolution(resolutionType)
+    fun changeResolution(
+        context: Context,
+        resolutionType: ResolutionType,
+        aspectRatioType: AspectRatioType,
+        surfaceTexture: SurfaceTexture
+    ) {
+        cameraParam.setResolution(
+            getCameraParams().supportedPreviewSizes,
+            resolutionType,
+            aspectRatioType
+        )
         closeCamera()
-        startPreview(context, cameraParam.viewWidth, cameraParam.viewHeight, surfaceTexture)
+        startPreview(context, surfaceTexture)
     }
 
     fun isFlashSupported(): Boolean {
@@ -231,35 +228,6 @@ class CameraEngine private constructor() {
             CameraParam.FRONT_CAMERA_ID -> frontCameraInfo
             else -> backCameraInfo
         }
-    }
-
-    private fun getOptimalSize(
-        sizes: List<Camera.Size>,
-        expectWidth: Int,
-        expectHeight: Int,
-        closeEnough: Double = 0.0
-    ): Camera.Size {
-        Collections.sort(sizes, sizeComparator)
-        val targetRatio = expectWidth.toDouble() / expectHeight.toDouble()
-        var optimalSize: Camera.Size? = null
-        var minDiff = Double.MAX_VALUE
-
-        sizes.forEach {
-            val ratio = it.width.toDouble() / it.height.toDouble()
-
-            if (abs(ratio - targetRatio) < minDiff) {
-                optimalSize = it
-                minDiff = abs(ratio - targetRatio)
-            }
-
-            if (minDiff <= closeEnough) {
-                return@forEach
-            }
-        }
-
-        Log.d(TAG, "width: ${optimalSize?.width}, height: ${optimalSize?.height}")
-
-        return optimalSize!!
     }
 
     private object CameraEngineHolder {

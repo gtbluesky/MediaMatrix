@@ -13,10 +13,15 @@ class BitmapUtil {
     companion object {
 
         @JvmStatic
-        fun rotateBitmap(bitmap: Bitmap, rotate: Int, isRecycled: Boolean): Bitmap {
-            val matrix = Matrix()
-            matrix.reset()
-            matrix.postRotate(rotate.toFloat())
+        fun rotateBitmap(
+            bitmap: Bitmap,
+            rotate: Int,
+            isRecycled: Boolean = true
+        ): Bitmap {
+            val matrix = Matrix().also {
+                it.reset()
+                it.postRotate(rotate.toFloat())
+            }
             val rotatedBitmap = Bitmap.createBitmap(
                 bitmap, 0, 0, bitmap.width,
                 bitmap.height, matrix, true
@@ -32,11 +37,12 @@ class BitmapUtil {
             bitmap: Bitmap,
             flipX: Boolean,
             flipY: Boolean,
-            isRecycled: Boolean
+            isRecycled: Boolean = true
         ): Bitmap {
-            val matrix = Matrix()
-            matrix.setScale((if (flipX) -1 else 1).toFloat(), (if (flipY) -1 else 1).toFloat())
-            matrix.postTranslate(bitmap.width.toFloat(), 0f)
+            val matrix = Matrix().also {
+                it.setScale((if (flipX) -1 else 1).toFloat(), (if (flipY) -1 else 1).toFloat())
+                it.postTranslate(bitmap.width.toFloat(), 0f)
+            }
             val result = Bitmap.createBitmap(
                 bitmap, 0, 0, bitmap.width,
                 bitmap.height, matrix, false
@@ -48,21 +54,41 @@ class BitmapUtil {
         }
 
         @JvmStatic
-        fun flipBitmap(bitmap: Bitmap, isRecycled: Boolean): Bitmap {
+        fun flipBitmap(bitmap: Bitmap, isRecycled: Boolean = true): Bitmap {
             return flipBitmap(bitmap, true, false, isRecycled)
         }
 
         @JvmStatic
-        fun saveBitmap(filePath: String, buffer: ByteBuffer, width: Int, height: Int) {
+        fun scaleBitmap(bitmap: Bitmap, scale: Float, isRecycled: Boolean = true): Bitmap {
+            val matrix = Matrix().also {
+                it.postScale(scale, scale)
+            }
+            val result = Bitmap.createBitmap(
+                bitmap, 0, 0, bitmap.width,
+                bitmap.height, matrix, false
+            )
+            if (isRecycled && !bitmap.isRecycled) {
+                bitmap.recycle()
+            }
+            return result
+        }
+
+        @JvmStatic
+        fun saveBitmap(filePath: String, buffer: ByteBuffer, scale: Float = 1f, width: Int, height: Int) {
             var bos: BufferedOutputStream? = null
             try {
                 bos = BufferedOutputStream(FileOutputStream(filePath))
-                var bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-                bitmap.copyPixelsFromBuffer(buffer)
-                bitmap = rotateBitmap(bitmap, 180, true)
-                bitmap = flipBitmap(bitmap, true)
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, bos)
-                bitmap.recycle()
+                Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).let {
+                    it.copyPixelsFromBuffer(buffer)
+                    rotateBitmap(it, 180)
+                }.let {
+                    flipBitmap(it)
+                }.let {
+                    scaleBitmap(it, scale)
+                }.let {
+                    it.compress(Bitmap.CompressFormat.JPEG, 100, bos)
+                    it.recycle()
+                }
             } catch (e: FileNotFoundException) {
                 e.printStackTrace()
             } finally {

@@ -1,4 +1,4 @@
-package com.github.gtbluesky.codec.hardware
+package com.github.gtbluesky.codec
 
 import android.media.*
 import android.opengl.EGLContext
@@ -9,15 +9,17 @@ import android.view.Surface
 import java.io.IOException
 import java.nio.ByteBuffer
 
-class Encoder {
+class HwEncoder {
 
     private var videoEncoder: MediaCodec? = null
     private var videoBufferInfo: MediaCodec.BufferInfo? = null
-    private var videoTrackIndex = INVALID_TRACK_INDEX
+    private var videoTrackIndex =
+        INVALID_TRACK_INDEX
 
     private var audioEncoder: MediaCodec? = null
     private var audioBufferInfo: MediaCodec.BufferInfo? = null
-    private var audioTrackIndex = INVALID_TRACK_INDEX
+    private var audioTrackIndex =
+        INVALID_TRACK_INDEX
 
     var inputSurface: Surface? = null
         private set
@@ -37,32 +39,34 @@ class Encoder {
 
     // 视频编码线程
     private var videoEncodeThread: HandlerThread? = null
-    private var videoEncodeHandler: VideoEncodeHandler? = null
+    private var hwVideoEncodeHandler: HwVideoEncodeHandler? = null
     // 视频复用线程
     private var videoMuxThread: HandlerThread? = null
     // 音频编码线程
     private var audioEncodeThread: HandlerThread? = null
-    private var audioEncodeHandler: AudioEncodeHandler? = null
+    private var hwAudioEncodeHandler: HwAudioEncodeHandler? = null
     // 音频复用线程
     private var audioMuxThread: HandlerThread? = null
 
+    private val codecParam = CodecParam.getInstance()
+
     companion object {
         //"video/avc"
-        private const val VIDEO_ENCODER_MIME_TYPE = MediaFormat.MIMETYPE_VIDEO_AVC
+        private const val VIDEO_ENCODE_MIME_TYPE = MediaFormat.MIMETYPE_VIDEO_AVC
         //"audio/mp4a-latm"
-        private const val AUDIO_ENCODER_MIME_TYPE = MediaFormat.MIMETYPE_AUDIO_AAC
+        private const val AUDIO_ENCODE_MIME_TYPE = MediaFormat.MIMETYPE_AUDIO_AAC
         private const val AUDIO_CHANNEL_COUNT = 2
         private const val INVALID_TRACK_INDEX = -1
         private const val FRAME_RATE = 30
         private const val IFRAME_INTERVAL = 5
 
-        private val TAG = Encoder::class.java.simpleName
+        private val TAG = HwEncoder::class.java.simpleName
 
     }
 
     fun initEncoder() {
         initThread()
-        createMuxer()
+        createMuxer("")
         createVideoEncoder()
         createAudioEncoder()
     }
@@ -71,7 +75,11 @@ class Encoder {
         videoEncodeThread = HandlerThread("VideoEncodeThread")
             .apply {
                 start()
-                videoEncodeHandler = VideoEncodeHandler(looper, this@Encoder)
+                hwVideoEncodeHandler =
+                    HwVideoEncodeHandler(
+                        looper,
+                        this@HwEncoder
+                    )
             }
 
         videoMuxThread = HandlerThread("VideoMuxThread")
@@ -82,7 +90,8 @@ class Encoder {
         audioEncodeThread = HandlerThread("AudioEncodeThread")
             .apply {
                 start()
-                audioEncodeHandler = AudioEncodeHandler(looper)
+                hwAudioEncodeHandler =
+                    HwAudioEncodeHandler(looper)
             }
 
         audioMuxThread = HandlerThread("AudioMuxThread")
@@ -104,16 +113,16 @@ class Encoder {
     private fun createVideoEncoder(): Boolean {
         videoBufferInfo = MediaCodec.BufferInfo()
         val format = MediaFormat.createVideoFormat(
-            VIDEO_ENCODER_MIME_TYPE,
-            videoWidth, videoHeight
+            VIDEO_ENCODE_MIME_TYPE,
+            codecParam.videoWidth, codecParam.videoHeight
         ).apply {
                 setInteger(
                     MediaFormat.KEY_COLOR_FORMAT,
                     MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface
                 )
-                setInteger(MediaFormat.KEY_BIT_RATE, params.getBitRate())
-                setInteger(MediaFormat.KEY_FRAME_RATE, VideoParams.FRAME_RATE)
-                setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, VideoParams.I_FRAME_INTERVAL)
+                setInteger(MediaFormat.KEY_BIT_RATE, codecParam.videoBitRate)
+                setInteger(MediaFormat.KEY_FRAME_RATE, codecParam.frameRate)
+                setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, codecParam.iFrameInterval)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                     setInteger(
                         MediaFormat.KEY_BITRATE_MODE,
@@ -126,7 +135,7 @@ class Encoder {
                 }
         }
         try {
-            videoEncoder = MediaCodec.createEncoderByType(VIDEO_ENCODER_MIME_TYPE).apply {
+            videoEncoder = MediaCodec.createEncoderByType(VIDEO_ENCODE_MIME_TYPE).apply {
                 configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
                 inputSurface = createInputSurface()
             }
@@ -137,19 +146,19 @@ class Encoder {
         return true
     }
 
-    private fun createAudioEncoder(samplerate: Int, channelCount: Int, bitrate: Int): Boolean {
+    private fun createAudioEncoder(): Boolean {
         audioBufferInfo = MediaCodec.BufferInfo()
         val format = MediaFormat.createAudioFormat(
-            AUDIO_ENCODER_MIME_TYPE,
-            samplerate,
-            channelCount
+            AUDIO_ENCODE_MIME_TYPE,
+            codecParam.sampleRate,
+            codecParam.channelCount
         ).apply {
-            setInteger(MediaFormat.KEY_BIT_RATE, bitrate)
+            setInteger(MediaFormat.KEY_BIT_RATE, codecParam.audioBitRate)
             setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectHE)
             setInteger(MediaFormat.KEY_CHANNEL_MASK, AudioFormat.CHANNEL_IN_MONO)
         }
         try {
-            audioEncoder = MediaCodec.createEncoderByType(AUDIO_ENCODER_MIME_TYPE).apply {
+            audioEncoder = MediaCodec.createEncoderByType(AUDIO_ENCODE_MIME_TYPE).apply {
                 configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
             }
         } catch (e: IOException) {
@@ -160,9 +169,9 @@ class Encoder {
     }
 
     fun start(textureWidth: Int, textureHeight: Int, eglContext: EGLContext) {
-        videoEncodeHandler?.apply {
+        hwVideoEncodeHandler?.apply {
             sendMessage(obtainMessage(
-                VideoEncodeHandler.MSG_START_ENCODING,
+                HwVideoEncodeHandler.MSG_START_ENCODING,
                 textureWidth,
                 textureHeight,
                 eglContext

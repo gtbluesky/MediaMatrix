@@ -12,22 +12,22 @@ import com.github.gtbluesky.mediamatrix.R
 
 class CameraActivity : AppCompatActivity() {
 
-    private lateinit var mCameraView: SurfaceView
-    private lateinit var mSwitchIv: ImageView
-    private lateinit var mFlashIv: ImageView
-    private var mTorchOn = false
+    private lateinit var cameraView: SurfaceView
+    private lateinit var switchIv: ImageView
+    private lateinit var flashIv: ImageView
+    private var torchOn = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setWindowFlag()
         setContentView(R.layout.camera_layout)
-        mCameraView = findViewById(R.id.camera_sv)
-        mSwitchIv = findViewById(R.id.switch_iv)
-        mFlashIv = findViewById(R.id.flash_iv)
+        cameraView = findViewById(R.id.camera_sv)
+        switchIv = findViewById(R.id.switch_iv)
+        flashIv = findViewById(R.id.flash_iv)
 
-        mCameraView.holder.addCallback(object : SurfaceHolder.Callback {
+        cameraView.holder.addCallback(object : SurfaceHolder.Callback {
             override fun surfaceCreated(holder: SurfaceHolder?) {
-                Camera2Engine.getInstance().startPreview(this@CameraActivity, mCameraView.width, mCameraView.height)
+                Camera2Engine.getInstance().startPreview(this@CameraActivity, cameraView.width, cameraView.height)
             }
 
             override fun surfaceChanged(
@@ -44,12 +44,12 @@ class CameraActivity : AppCompatActivity() {
             }
         })
 
-        mSwitchIv.setOnClickListener {
+        switchIv.setOnClickListener {
             Camera2Engine.getInstance().switchCamera(this)
         }
 
-        mFlashIv.setOnClickListener {
-            Camera2Engine.getInstance().toggleTorch(!mTorchOn.apply { mTorchOn = !this })
+        flashIv.setOnClickListener {
+            Camera2Engine.getInstance().toggleTorch(!torchOn.apply { torchOn = !this })
         }
     }
 

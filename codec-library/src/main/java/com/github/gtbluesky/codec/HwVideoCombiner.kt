@@ -1,4 +1,4 @@
-package com.github.gtbluesky.codec.hardware
+package com.github.gtbluesky.codec
 
 import android.media.MediaCodec
 import android.media.MediaExtractor
@@ -12,7 +12,7 @@ import java.nio.ByteBuffer
 /**
  * 基于 MediaExtractor + MediaMuxer 实现
  */
-class VideoCombiner(
+class HwVideoCombiner(
     private val videoList: List<String>,
     private val destPath: String,
     private val combineListener: CombineListener? = null
@@ -20,19 +20,21 @@ class VideoCombiner(
 
     private var muxer: MediaMuxer? = null
     private var readBuf: ByteBuffer
-    private var outAudioTrackIndex = INVALID_TRACK_INDEX
-    private var outVideoTrackIndex = INVALID_TRACK_INDEX
+    private var outAudioTrackIndex =
+        INVALID_TRACK_INDEX
+    private var outVideoTrackIndex =
+        INVALID_TRACK_INDEX
     private var audioFormat: MediaFormat? = null
     private var videoFormat: MediaFormat? = null
 
     companion object {
-        private val TAG = VideoCombiner::class.java.simpleName
+        private val TAG = HwVideoCombiner::class.java.simpleName
         private const val INVALID_TRACK_INDEX = -1
-        private const val MAX_BUFF_SIZE = 1 shl 20
+        private const val MAX_BUFFER_SIZE = 1 shl 20
     }
 
     init {
-        readBuf = ByteBuffer.allocate(MAX_BUFF_SIZE)
+        readBuf = ByteBuffer.allocate(MAX_BUFFER_SIZE)
     }
 
     fun combine() {
