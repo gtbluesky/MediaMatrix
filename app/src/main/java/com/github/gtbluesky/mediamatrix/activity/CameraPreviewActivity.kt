@@ -1,24 +1,28 @@
 package com.github.gtbluesky.mediamatrix.activity
 
+import android.graphics.Color
 import android.os.Bundle
 import android.os.Environment
+import android.os.SystemClock
 import android.view.View
 import android.view.WindowManager
+import android.widget.Chronometer
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.github.gtbluesky.camera.MatrixCameraFragment
 import com.github.gtbluesky.mediamatrix.R
-import com.github.gtbluesky.camera.CameraPreviewFragment
 import com.yanzhenjie.permission.AndPermission
 import com.yanzhenjie.permission.Permission
 
 class CameraPreviewActivity :
     AppCompatActivity(), View.OnClickListener {
 
+    private lateinit var chronometer: Chronometer
     private lateinit var switchIv: ImageView
     private lateinit var flashIv: ImageView
     private lateinit var recordIv: ImageView
-    private lateinit var cameraPreviewFragment: CameraPreviewFragment
+    private lateinit var matrixCameraFragment: MatrixCameraFragment
 
     companion object {
         private const val FRAGMENT_CAMERA = "fragment_camera"
@@ -42,8 +46,8 @@ class CameraPreviewActivity :
                 Permission.Group.MICROPHONE,
                 Permission.Group.STORAGE
             ).onGranted {
-                CameraPreviewFragment.newInstance(previewNow = true).let {
-                    cameraPreviewFragment = it
+                MatrixCameraFragment.newInstance(previewNow = true).let {
+                    matrixCameraFragment = it
                     supportFragmentManager
                         .beginTransaction()
                         .replace(
@@ -85,6 +89,7 @@ class CameraPreviewActivity :
     }
 
     private fun initView() {
+        chronometer = findViewById(R.id.chronometer)
         switchIv = findViewById(R.id.switch_iv)
         flashIv = findViewById(R.id.flash_iv)
         recordIv = findViewById(R.id.record_iv)
@@ -94,16 +99,40 @@ class CameraPreviewActivity :
         switchIv.setOnClickListener(this)
         flashIv.setOnClickListener(this)
         recordIv.setOnClickListener(this)
+        recordIv.setOnLongClickListener {
+            startRecord()
+            true
+        }
     }
 
     override fun onClick(v: View?) {
         when (v?.id) {
-            R.id.switch_iv -> cameraPreviewFragment.switchCamera()
-            R.id.flash_iv -> cameraPreviewFragment.toggleTorch()
-            R.id.record_iv -> cameraPreviewFragment.takePicture(
+            R.id.switch_iv -> matrixCameraFragment.switchCamera()
+            R.id.flash_iv -> matrixCameraFragment.toggleTorch()
+            R.id.record_iv -> matrixCameraFragment.takePicture(
                 "${Environment.getExternalStorageDirectory().absolutePath}/pic_${System.currentTimeMillis()}.jpg"
             )
         }
+    }
+
+    private fun startRecord() {
+        recordIv.drawable.level = 2
+        chronometer.let {
+            it.base = SystemClock.elapsedRealtime()
+            it.start()
+            it.setTextColor(Color.RED)
+        }
+        matrixCameraFragment.startRecording("${Environment.getExternalStorageDirectory().absolutePath}/vod_${System.currentTimeMillis()}.mp4")
+    }
+
+    private fun stopRecord() {
+        recordIv.drawable.level = 1
+        chronometer.let {
+            it.base = SystemClock.elapsedRealtime()
+            it.stop()
+            it.setTextColor(Color.WHITE)
+        }
+        matrixCameraFragment.stopRecording()
     }
 
 }

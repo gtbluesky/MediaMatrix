@@ -9,9 +9,8 @@ import androidx.fragment.app.Fragment
 import com.github.gtbluesky.camera.engine.CameraParam
 import com.github.gtbluesky.camera.render.PreviewRenderer
 
-class CameraPreviewFragment : Fragment() {
+class MatrixCameraFragment : Fragment() {
 
-//    private lateinit var surfaceView: SurfaceView
     private lateinit var contentView: RelativeLayout
     private lateinit var textureView: TextureView
     private var previewRenderer: PreviewRenderer? = null
@@ -20,11 +19,11 @@ class CameraPreviewFragment : Fragment() {
         private set
 
     companion object {
-        private val TAG = CameraPreviewFragment::class.java.simpleName
+        private val TAG = MatrixCameraFragment::class.java.simpleName
 
         @JvmStatic
-        fun newInstance(bundle: Bundle? = null, previewNow: Boolean = false): CameraPreviewFragment {
-            val fragment = CameraPreviewFragment().also {
+        fun newInstance(bundle: Bundle? = null, previewNow: Boolean = false): MatrixCameraFragment {
+            val fragment = MatrixCameraFragment().also {
                 it.previewNow = previewNow
             }
             bundle?.let {
@@ -136,6 +135,10 @@ class CameraPreviewFragment : Fragment() {
     fun switchCamera() = previewRenderer?.switchCamera()
 
     fun takePicture(filePath: String) = previewRenderer?.takePicture(filePath)
+
+    fun startRecording(filePath: String) = previewRenderer?.startRecording()
+
+    fun stopRecording() = previewRenderer?.stopRecording()
 
     fun toggleTorch() {
         (!torchOn).let {
