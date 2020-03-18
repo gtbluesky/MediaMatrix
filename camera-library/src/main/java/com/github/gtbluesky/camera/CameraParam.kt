@@ -1,7 +1,8 @@
-package com.github.gtbluesky.camera.engine
+package com.github.gtbluesky.camera
 
 import android.hardware.Camera
 import android.util.Log
+import com.github.gtbluesky.codec.CodecParam
 import java.util.*
 import kotlin.math.abs
 import kotlin.math.sign
@@ -47,7 +48,8 @@ class CameraParam private constructor() {
         private const val RATIO_3_4 = 0.75f
         private const val RATIO_9_16 = 0.5625f
 
-        fun getInstance() = CameraParamHolder.holder
+        fun getInstance() =
+            CameraParamHolder.holder
 
         private val sizeComparator = Comparator<Camera.Size> { o1, o2 ->
             (o1.width * o1.height - o2.width * o2.height).sign
@@ -59,7 +61,9 @@ class CameraParam private constructor() {
             expectHeight: Int,
             closeEnough: Double = 0.0
         ): Camera.Size {
-            Collections.sort(sizes, sizeComparator)
+            Collections.sort(sizes,
+                sizeComparator
+            )
             val targetRatio = expectWidth.toDouble() / expectHeight.toDouble()
             var optimalSize: Camera.Size? = null
             var minDiff = Double.MAX_VALUE
@@ -69,16 +73,16 @@ class CameraParam private constructor() {
                     optimalSize = it
                     return@forEach
                 }
-                val ratio = it.width.toDouble() / it.height.toDouble()
-
-                if (abs(ratio - targetRatio) < minDiff) {
-                    optimalSize = it
-                    minDiff = abs(ratio - targetRatio)
-                }
-
-                if (minDiff <= closeEnough) {
-                    return@forEach
-                }
+//                val ratio = it.width.toDouble() / it.height.toDouble()
+//
+//                if (abs(ratio - targetRatio) < minDiff) {
+//                    optimalSize = it
+//                    minDiff = abs(ratio - targetRatio)
+//                }
+//
+//                if (minDiff <= closeEnough) {
+//                    return@forEach
+//                }
             }
 
             Log.d(
@@ -91,7 +95,10 @@ class CameraParam private constructor() {
     }
 
     init {
-        initParams(ResolutionType.R_720, AspectRatioType.W_9_H_16)
+        initParams(
+            ResolutionType.R_720,
+            AspectRatioType.W_9_H_16
+        )
     }
 
     private fun initParams(
@@ -115,7 +122,8 @@ class CameraParam private constructor() {
 
     internal fun reset() {
         ratio = 0f
-        expectFps = EXPECTED_PREVIEW_FPS
+        expectFps =
+            EXPECTED_PREVIEW_FPS
         previewFps = 0
         expectWidth = 0
         expectHeight = (expectWidth / ratio).toInt()
@@ -124,8 +132,12 @@ class CameraParam private constructor() {
         cameraAutoFocusCallback = null
         viewWidth = 0
         viewHeight = 0
-        cameraId = BACK_CAMERA_ID
-        initParams(ResolutionType.R_720, AspectRatioType.W_9_H_16)
+        cameraId =
+            BACK_CAMERA_ID
+        initParams(
+            ResolutionType.R_720,
+            AspectRatioType.W_9_H_16
+        )
     }
 
     internal fun setResolution(
@@ -138,9 +150,16 @@ class CameraParam private constructor() {
     }
 
     internal fun setPreviewSize(sizes: List<Camera.Size>): Camera.Size {
-        return getOptimalSize(sizes, expectWidth, expectHeight).also {
+        return getOptimalSize(
+            sizes,
+            expectWidth,
+            expectHeight
+        ).also {
             previewWidth = it.height
             previewHeight = it.width
+            CodecParam.getInstance().videoWidth = previewWidth
+            CodecParam.getInstance().videoHeight = previewHeight
+            CodecParam.getInstance().videoBitRate = previewWidth * previewHeight * 2
         }
     }
 

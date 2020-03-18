@@ -17,11 +17,14 @@ abstract class BaseFilter {
     protected var textureUnitHandle = GLES30.GL_NONE
 
     protected val mvpMatrix = FloatArray(GL_MATRIX_SIZE)
-    // 纹理宽高
-    var width = 0
-    var height = 0
+    // 纹理宽高，与相机预览宽高一致
+    var textureWidth = 0
+    var textureHeight = 0
+    // 视图宽高，用于设置glViewport宽高
+    protected var viewWidth = 0
+    protected var viewHeight = 0
     protected var program = GLES30.GL_NONE
-    // FBO宽高
+    // FBO宽高，一般和视图宽高一致
     protected var frameWidth = 0
     protected var frameHeight = 0
     // FBO
@@ -63,7 +66,9 @@ abstract class BaseFilter {
 
     abstract fun init()
 
-    abstract fun change(width: Int, height: Int)
+    abstract fun setViewSize(width: Int, height: Int)
+
+    abstract fun setTextureSize(width: Int, height: Int)
 
     abstract fun drawFrame(
         textureId: Int,

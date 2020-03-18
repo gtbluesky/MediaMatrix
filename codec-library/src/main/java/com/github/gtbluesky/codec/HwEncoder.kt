@@ -2,102 +2,59 @@ package com.github.gtbluesky.codec
 
 import android.media.*
 import android.opengl.EGLContext
-import android.os.Build
 import android.os.HandlerThread
-import android.util.Log
-import android.view.Surface
 import java.io.IOException
-import java.nio.ByteBuffer
 
 class HwEncoder {
 
-    private var videoEncoder: MediaCodec? = null
-    private var videoBufferInfo: MediaCodec.BufferInfo? = null
-    private var videoTrackIndex =
-        INVALID_TRACK_INDEX
-
-    private var audioEncoder: MediaCodec? = null
-    private var audioBufferInfo: MediaCodec.BufferInfo? = null
-    private var audioTrackIndex =
-        INVALID_TRACK_INDEX
-
-    var inputSurface: Surface? = null
+    var mediaMuxer: MediaMuxer? = null
         private set
-    private var mediaMuxer: MediaMuxer? = null
-    private val encodeSync = Any()
-
+    @Volatile var videoTrackIndex = INVALID_TRACK_INDEX
+    @Volatile var audioTrackIndex = INVALID_TRACK_INDEX
+    var muxerStarted = false
+    val muxerLock = Object()
     private var isEncoding = false
-    private var muxerStarted = false
-
     private var startTimeUs = 0L
     var duration = 0L
         private set
 
     var enableAudio = true
 
-    @Volatile private var requestDrainCount: Int = 0
-
     // 视频编码线程
     private var videoEncodeThread: HandlerThread? = null
-    private var hwVideoEncodeHandler: HwVideoEncodeHandler? = null
-    // 视频复用线程
-    private var videoMuxThread: HandlerThread? = null
+    private var videoHandler: HwVideoHandler? = null
     // 音频编码线程
     private var audioEncodeThread: HandlerThread? = null
-    private var hwAudioEncodeHandler: HwAudioEncodeHandler? = null
-    // 音频复用线程
-    private var audioMuxThread: HandlerThread? = null
-
-    private val codecParam = CodecParam.getInstance()
+    private var audioHandler: HwAudioHandler? = null
 
     companion object {
-        //"video/avc"
-        private const val VIDEO_ENCODE_MIME_TYPE = MediaFormat.MIMETYPE_VIDEO_AVC
-        //"audio/mp4a-latm"
-        private const val AUDIO_ENCODE_MIME_TYPE = MediaFormat.MIMETYPE_AUDIO_AAC
-        private const val AUDIO_CHANNEL_COUNT = 2
-        private const val INVALID_TRACK_INDEX = -1
-        private const val FRAME_RATE = 30
-        private const val IFRAME_INTERVAL = 5
-
         private val TAG = HwEncoder::class.java.simpleName
+        const val INVALID_TRACK_INDEX = -1
+        const val MSG_RENDER = 0x01
+        const val MSG_AUDIO_RECORDING = 0x02
+        const val MSG_START_ENCODING = 0x03
+        const val MSG_STOP_ENCODING = 0x04
+        const val MSG_QUIT = 0x05
 
     }
 
-    fun initEncoder() {
-        initThread()
-        createMuxer("")
-        createVideoEncoder()
-        createAudioEncoder()
-    }
-
-    private fun initThread() {
+    init {
         videoEncodeThread = HandlerThread("VideoEncodeThread")
             .apply {
                 start()
-                hwVideoEncodeHandler =
-                    HwVideoEncodeHandler(
-                        looper,
-                        this@HwEncoder
-                    )
+                videoHandler = HwVideoHandler(looper, this@HwEncoder).also {
+                    it.createVideoEncoder()
+                }
             }
-
-        videoMuxThread = HandlerThread("VideoMuxThread")
-            .apply {
-                start()
-            }
-
-        audioEncodeThread = HandlerThread("AudioEncodeThread")
-            .apply {
-                start()
-                hwAudioEncodeHandler =
-                    HwAudioEncodeHandler(looper)
-            }
-
-        audioMuxThread = HandlerThread("AudioMuxThread")
-            .apply {
-                start()
-            }
+        if (enableAudio) {
+            audioEncodeThread = HandlerThread("AudioEncodeThread")
+                .apply {
+                    start()
+                    audioHandler = HwAudioHandler(looper, this@HwEncoder).also {
+                        it.createAudioEncoder()
+                    }
+                }
+        }
     }
 
     private fun createMuxer(filePath: String): Boolean {
@@ -110,202 +67,56 @@ class HwEncoder {
         return true
     }
 
-    private fun createVideoEncoder(): Boolean {
-        videoBufferInfo = MediaCodec.BufferInfo()
-        val format = MediaFormat.createVideoFormat(
-            VIDEO_ENCODE_MIME_TYPE,
-            codecParam.videoWidth, codecParam.videoHeight
-        ).apply {
-                setInteger(
-                    MediaFormat.KEY_COLOR_FORMAT,
-                    MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface
-                )
-                setInteger(MediaFormat.KEY_BIT_RATE, codecParam.videoBitRate)
-                setInteger(MediaFormat.KEY_FRAME_RATE, codecParam.frameRate)
-                setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, codecParam.iFrameInterval)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    setInteger(
-                        MediaFormat.KEY_BITRATE_MODE,
-                        MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR
-                    )
-                    setInteger(
-                        MediaFormat.KEY_COMPLEXITY,
-                        MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR
-                    )
-                }
+    fun start(eglContext: EGLContext, filePath: String) {
+        createMuxer(filePath)
+        videoHandler?.apply {
+            sendMessage(
+                obtainMessage(MSG_START_ENCODING, eglContext)
+            )
         }
-        try {
-            videoEncoder = MediaCodec.createEncoderByType(VIDEO_ENCODE_MIME_TYPE).apply {
-                configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
-                inputSurface = createInputSurface()
-            }
-        } catch (e: IOException) {
-            e.printStackTrace()
-            return false
-        }
-        return true
-    }
-
-    private fun createAudioEncoder(): Boolean {
-        audioBufferInfo = MediaCodec.BufferInfo()
-        val format = MediaFormat.createAudioFormat(
-            AUDIO_ENCODE_MIME_TYPE,
-            codecParam.sampleRate,
-            codecParam.channelCount
-        ).apply {
-            setInteger(MediaFormat.KEY_BIT_RATE, codecParam.audioBitRate)
-            setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectHE)
-            setInteger(MediaFormat.KEY_CHANNEL_MASK, AudioFormat.CHANNEL_IN_MONO)
-        }
-        try {
-            audioEncoder = MediaCodec.createEncoderByType(AUDIO_ENCODE_MIME_TYPE).apply {
-                configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
-            }
-        } catch (e: IOException) {
-            e.printStackTrace()
-            return false
-        }
-        return true
-    }
-
-    fun start(textureWidth: Int, textureHeight: Int, eglContext: EGLContext) {
-        hwVideoEncodeHandler?.apply {
-            sendMessage(obtainMessage(
-                HwVideoEncodeHandler.MSG_START_ENCODING,
-                textureWidth,
-                textureHeight,
-                eglContext
-            ))
+        audioHandler?.apply {
+            sendMessage(obtainMessage(MSG_START_ENCODING))
         }
     }
 
     fun stop() {
-        //videoencode thread
-    }
-
-    fun finish() {
-        //videoencode thread
-        release()
-    }
-
-    private fun drainVideoEncoder(endOfStream: Boolean) {
-        if (endOfStream) {
-            videoEncoder?.signalEndOfInputStream()
+        videoHandler?.apply {
+            sendMessage(obtainMessage(MSG_STOP_ENCODING))
+            sendMessage(obtainMessage(MSG_QUIT))
         }
-
-        while (true) {
-            val outputBufferIndex = videoEncoder!!.dequeueOutputBuffer(videoBufferInfo!!, 10000)
-            if (outputBufferIndex == MediaCodec.INFO_TRY_AGAIN_LATER) {
-                // no output available yet
-                if (!endOfStream) {
-                    break // out of while
-                } else {
-                    Log.d(
-                        TAG,
-                        "no output available, spinning to await EOS"
-                    )
-                }
-            } else if (outputBufferIndex == MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED) {
-                // not expected for an encoder
-                Log.d(
-                    TAG,
-                    "encoder output buffer changed"
-                )
-            } else if (outputBufferIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
-                synchronized(encodeSync) {
-                    // should happen before receiving buffers, and should only happen once
-                    if (muxerStarted) {
-                        throw RuntimeException("format changed twice")
-                    }
-                    val newFormat = videoEncoder!!.outputFormat
-                    Log.d(
-                        TAG,
-                        "encoder output format changed: ${newFormat.getString(MediaFormat.KEY_MIME)}"
-                    )
-                    // now that we have the Magic Goodies, start the muxer
-                    videoTrackIndex = mediaMuxer!!.addTrack(newFormat)
-                    if (videoTrackIndex > INVALID_TRACK_INDEX && audioTrackIndex > INVALID_TRACK_INDEX) {
-                        mediaMuxer?.start()
-                        muxerStarted = true
-                    }
-                }
-            } else if (outputBufferIndex < 0) {
-                Log.w(
-                    TAG,
-                    "unexpected result from encoder.dequeueOutputBuffer: $outputBufferIndex"
-                )
-            } else {
-                val encodedBuffer = getOutputBuffer(videoEncoder!!, outputBufferIndex) ?: throw RuntimeException("encoderOutputBuffer $outputBufferIndex was null")
-
-                if (videoBufferInfo!!.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG != 0) {
-                    // The codec config data was pulled out and fed to the muxer when we got
-                    // the INFO_OUTPUT_FORMAT_CHANGED status.  Ignore it.
-                    Log.d(
-                        TAG,
-                        "ignoring BUFFER_FLAG_CODEC_CONFIG"
-                    )
-                    videoEncoder!!.outputFormat.setByteBuffer("csd-0", encodedBuffer)
-                    videoBufferInfo!!.size = 0
-                }
-                if (videoBufferInfo!!.size > 0 && muxerStarted) {
-                    calculateDuration(videoBufferInfo!!)
-                    encodedBuffer.position(videoBufferInfo!!.offset)
-                    encodedBuffer.limit(videoBufferInfo!!.offset + videoBufferInfo!!.size)
-                    mediaMuxer?.writeSampleData(videoTrackIndex, encodedBuffer, videoBufferInfo!!)
-                    Log.d(
-                        TAG,
-                        "sent ${videoBufferInfo?.size} bytes to muxer, ts=${videoBufferInfo?.presentationTimeUs}"
-                    )
-                }
-                videoEncoder?.releaseOutputBuffer(outputBufferIndex, false)
-                if (videoBufferInfo!!.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) {
-                    if (!endOfStream) {
-                        Log.w(
-                            TAG,
-                            "reached end of stream unexpectedly"
-                        )
-                    } else {
-                        Log.d(
-                            TAG,
-                            "end of stream reached"
-                        )
-                    }
-                    break // out of while
-                }
+        audioHandler?.apply {
+            sendMessage(obtainMessage(MSG_STOP_ENCODING))
+            sendMessage(obtainMessage(MSG_QUIT))
+        }
+        Thread{
+            try {
+                videoEncodeThread?.join()
+                videoEncodeThread = null
+                audioEncodeThread?.join()
+                audioEncodeThread = null
+            } catch (e: InterruptedException) {
+                e.printStackTrace()
             }
-        }
-
-    }
-
-    private fun drainAudioEncoder(endOfStream: Boolean) {
-
-    }
-
-    fun onFrameAvailable() {
-        //videoencode thread
-    }
-
-    private fun release() {
-        videoEncoder?.apply {
-            stop()
-            release()
-        }
-        videoEncoder = null
-
-        audioEncoder?.apply {
-            stop()
-            release()
-        }
-        audioEncoder = null
-
-        mediaMuxer?.apply {
-            if (muxerStarted) {
-                stop()
-                muxerStarted = false
+            mediaMuxer?.apply {
+                if (muxerStarted) {
+                    stop()
+                    muxerStarted = false
+                }
+                release()
             }
-            release()
+            mediaMuxer = null
+        }.start()
+    }
+
+    fun onFrameAvailable(textureId: Int, timeStamp: Long) {
+        videoHandler?.apply {
+            sendMessage(obtainMessage(
+                MSG_RENDER,
+                textureId,
+                0,
+                timeStamp
+            ))
         }
-        mediaMuxer = null
     }
 
     private fun calculateDuration(bufferInfo: MediaCodec.BufferInfo) {
@@ -313,22 +124,6 @@ class HwEncoder {
             startTimeUs = bufferInfo.presentationTimeUs
         } else {
             duration = bufferInfo.presentationTimeUs - startTimeUs
-        }
-    }
-
-    private fun getInputBuffer(codec: MediaCodec, index: Int): ByteBuffer? {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            codec.getInputBuffer(index)
-        } else {
-            codec.inputBuffers[index]
-        }
-    }
-
-    private fun getOutputBuffer(codec: MediaCodec, index: Int): ByteBuffer? {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            codec.getOutputBuffer(index)
-        } else {
-            codec.outputBuffers[index]
         }
     }
 }

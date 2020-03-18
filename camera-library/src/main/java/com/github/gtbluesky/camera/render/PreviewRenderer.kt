@@ -70,10 +70,11 @@ class PreviewRenderer(private val context: Context) {
         }
     }
 
-    fun startRecording() {
+    fun startRecording(filePath: String) {
         renderHandler.apply {
             sendMessage(obtainMessage(
-                RenderHandler.MSG_START_RECORDING
+                RenderHandler.MSG_START_RECORDING,
+                filePath
             ))
         }
     }

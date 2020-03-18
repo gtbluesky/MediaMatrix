@@ -6,13 +6,11 @@ import android.view.*
 import android.widget.RelativeLayout
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import com.github.gtbluesky.camera.engine.CameraParam
 import com.github.gtbluesky.camera.render.PreviewRenderer
 
 class MatrixCameraFragment : Fragment() {
 
     private lateinit var contentView: RelativeLayout
-    private lateinit var textureView: TextureView
     private var previewRenderer: PreviewRenderer? = null
     private var previewNow = false
     var torchOn = false
@@ -47,69 +45,74 @@ class MatrixCameraFragment : Fragment() {
     }
 
     private fun initCameraView() {
-        textureView = TextureView(context)
         previewRenderer = PreviewRenderer(context!!)
-        textureView.surfaceTextureListener = object : TextureView.SurfaceTextureListener {
-            override fun onSurfaceTextureAvailable(
-                surface: SurfaceTexture,
-                width: Int,
-                height: Int
-            ) {
-                CameraParam.getInstance().let {
-                    it.viewWidth = width
-                    it.viewHeight = height
+        TextureView(context).also {
+            it.surfaceTextureListener = object : TextureView.SurfaceTextureListener {
+                override fun onSurfaceTextureAvailable(
+                    surface: SurfaceTexture,
+                    width: Int,
+                    height: Int
+                ) {
+                    CameraParam.getInstance().let {
+                        it.viewWidth = width
+                        it.viewHeight = height
+                    }
+                    previewRenderer?.let {
+                        it.bindSurface(surface)
+                        it.changePreviewSize()
+                    }
                 }
-                previewRenderer?.let {
-                    it.bindSurface(surface)
-                    it.changePreviewSize()
+
+                override fun onSurfaceTextureSizeChanged(
+                    surface: SurfaceTexture?,
+                    width: Int,
+                    height: Int
+                ) {
+                    CameraParam.getInstance().let {
+                        it.viewWidth = width
+                        it.viewHeight = height
+                    }
+                    previewRenderer?.changePreviewSize()
                 }
-            }
 
-            override fun onSurfaceTextureSizeChanged(
-                surface: SurfaceTexture?,
-                width: Int,
-                height: Int
-            ) {
-                CameraParam.getInstance().let {
-                    it.viewWidth = width
-                    it.viewHeight = height
+                override fun onSurfaceTextureDestroyed(surface: SurfaceTexture?): Boolean {
+                    previewRenderer?.unBindSurface()
+                    return true
                 }
-                previewRenderer?.changePreviewSize()
-            }
 
-            override fun onSurfaceTextureDestroyed(surface: SurfaceTexture?): Boolean {
-                previewRenderer?.unBindSurface()
-                return true
+                override fun onSurfaceTextureUpdated(surface: SurfaceTexture?) {}
             }
-
-            override fun onSurfaceTextureUpdated(surface: SurfaceTexture?) {}
+            contentView.addView(it)
         }
-        contentView.addView(textureView)
 
-//        mCameraView.setRenderer(object : GLSurfaceView.Renderer {
-//            override fun onDrawFrame(gl: GL10?) {
-//                CameraEngine.instance.surfaceTexture?.apply {
-//                    updateTexImage()
-//                    getTransformMatrix(CameraEngine.instance.mCameraRenderer.transformMatrix)
-//                }
-//                CameraEngine.instance.mCameraRenderer.apply {
-//                    drawFrame()
-//                }
-//            }
+//        SurfaceView(context).also {
+//            it.holder.addCallback(object : SurfaceHolder.Callback {
+//                override fun surfaceCreated(holder: SurfaceHolder) {
 //
-//            override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
-//                CameraEngine.instance.mCameraRenderer.change(width, height)
-//            }
-//
-//            override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
-//                CameraEngine.instance.mCameraRenderer.init()
-//                CameraEngine.instance.startPreview(mContext, mCameraView.width, mCameraView.height)
-//                CameraEngine.instance.surfaceTexture?.setOnFrameAvailableListener {
-//                    mCameraView.requestRender()
 //                }
-//            }
-//        })
-//        mCameraView.renderMode = GLSurfaceView.RENDERMODE_WHEN_DIRTY
+//
+//                override fun surfaceChanged(
+//                    holder: SurfaceHolder,
+//                    format: Int,
+//                    width: Int,
+//                    height: Int
+//                ) {
+//                    CameraParam.getInstance().let {
+//                        it.viewWidth = width
+//                        it.viewHeight = height
+//                    }
+//                    previewRenderer?.let {
+//                        it.bindSurface(holder.surface)
+//                        it.changePreviewSize()
+//                    }
+//                }
+//
+//                override fun surfaceDestroyed(holder: SurfaceHolder?) {
+//
+//                }
+//            })
+//            contentView.addView(it)
+//        }
     }
 
     fun startPrewiew() {
@@ -136,7 +139,7 @@ class MatrixCameraFragment : Fragment() {
 
     fun takePicture(filePath: String) = previewRenderer?.takePicture(filePath)
 
-    fun startRecording(filePath: String) = previewRenderer?.startRecording()
+    fun startRecording(filePath: String) = previewRenderer?.startRecording(filePath)
 
     fun stopRecording() = previewRenderer?.stopRecording()
 

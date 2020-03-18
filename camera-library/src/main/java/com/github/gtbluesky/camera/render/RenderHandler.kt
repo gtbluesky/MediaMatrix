@@ -10,7 +10,8 @@ import android.util.Log
 import android.view.Surface
 import android.view.SurfaceHolder
 import com.github.gtbluesky.camera.engine.CameraEngine
-import com.github.gtbluesky.camera.engine.CameraParam
+import com.github.gtbluesky.camera.CameraParam
+import com.github.gtbluesky.codec.CodecParam
 import com.github.gtbluesky.codec.HwEncoder
 import com.github.gtbluesky.gles.egl.EglCore
 import com.github.gtbluesky.gles.egl.WindowSurface
@@ -27,7 +28,7 @@ class RenderHandler(private val context: Context, looper: Looper) :
     private var renderManager: RenderManager? = RenderManager()
     private val transformMatrix = FloatArray(16)
     private var isRecording = false
-    private val encoder = HwEncoder()
+    private var encoder: HwEncoder? = null
 
     companion object {
         private val TAG = RenderHandler::class.java.simpleName
@@ -43,8 +44,6 @@ class RenderHandler(private val context: Context, looper: Looper) :
         const val MSG_START_RECORDING = 0x05
         // 停止录制
         const val MSG_STOP_RECORDING = 0x06
-        // 结束录制，需要释放资源
-        const val MSG_FINISH_RECORDING = 0x07
         // 切换相机
         const val MSG_SWITCH_CAMERA = 0x08
         // 预览帧回调
@@ -70,43 +69,39 @@ class RenderHandler(private val context: Context, looper: Looper) :
             MSG_SURFACE_CREATED -> {
                 when (msg.obj) {
                     is SurfaceHolder -> {
-                        surfaceCreated((msg.obj as SurfaceHolder).surface)
+                        handleSurfaceCreated((msg.obj as SurfaceHolder).surface)
                     }
                     is Surface -> {
-                        surfaceCreated(msg.obj as Surface)
+                        handleSurfaceCreated(msg.obj as Surface)
                     }
                     is SurfaceTexture -> {
-                        surfaceCreated(msg.obj as SurfaceTexture)
+                        handleSurfaceCreated(msg.obj as SurfaceTexture)
                     }
                 }
             }
             MSG_SURFACE_CHANGED -> {
-                surfaceChanged()
+                handleSurfaceChanged()
             }
             MSG_SURFACE_DESTROYED -> {
-                surfaceDestroyed()
+                handleSurfaceDestroyed()
             }
             MSG_RENDER -> {
-                drawFrame()
-                if (isRecording) {
-                    encoder.onFrameAvailable()
-                }
+                handleDrawFrame()
             }
             MSG_SWITCH_CAMERA -> {
-                switchCamera()
+                handleSwitchCamera()
             }
             MSG_START_RECORDING -> {
-                startRecording()
+                (msg.obj as? String)?.let {
+                    handleStartRecording(it)
+                }
             }
             MSG_STOP_RECORDING -> {
-                stopRecording()
-            }
-            MSG_FINISH_RECORDING -> {
-                finishRecording()
+                handleStopRecording()
             }
             MSG_TAKE_PICTURE -> {
                 (msg.obj as? String)?.let {
-                    takePicture(it)
+                    handleTakePicture(it)
                 }
             }
             MSG_TOGGLE_TORCH -> {
@@ -117,7 +112,7 @@ class RenderHandler(private val context: Context, looper: Looper) :
         }
     }
 
-    private fun surfaceCreated(surface: Surface) {
+    private fun handleSurfaceCreated(surface: Surface) {
         eglCore = EglCore(flags = EglCore.FLAG_RECORDABLE)
         windowSurface = WindowSurface(eglCore!!, surface, false)
         windowSurface?.makeCurrent()
@@ -135,7 +130,7 @@ class RenderHandler(private val context: Context, looper: Looper) :
 
     }
 
-    private fun surfaceCreated(surfaceTexture: SurfaceTexture) {
+    private fun handleSurfaceCreated(surfaceTexture: SurfaceTexture) {
         eglCore = EglCore(flags = EglCore.FLAG_RECORDABLE)
         windowSurface = WindowSurface(eglCore!!, surfaceTexture)
         windowSurface?.makeCurrent()
@@ -156,15 +151,21 @@ class RenderHandler(private val context: Context, looper: Looper) :
         sendMessage(obtainMessage(MSG_RENDER))
     }
 
-    private fun surfaceChanged() {
+    private fun handleSurfaceChanged() {
         windowSurface?.makeCurrent()
-        renderManager?.setDisplaySize(
-            CameraParam.getInstance().viewWidth,
-            CameraParam.getInstance().viewHeight
-        )
+        renderManager?.apply {
+            setViewSize(
+                CameraParam.getInstance().viewWidth,
+                CameraParam.getInstance().viewHeight
+            )
+            setTextureSize(
+                CameraParam.getInstance().previewWidth,
+                CameraParam.getInstance().previewHeight
+            )
+        }
     }
 
-    private fun surfaceDestroyed() {
+    private fun handleSurfaceDestroyed() {
         windowSurface?.makeCurrent()
         renderManager?.release()
         CameraEngine.getInstance().let {
@@ -177,44 +178,47 @@ class RenderHandler(private val context: Context, looper: Looper) :
         windowSurface = null
         eglCore?.release()
         eglCore = null
+        CodecParam.getInstance().reset()
     }
 
-    private fun drawFrame() {
-        if (surfaceTexture == null || windowSurface == null) {
-            return
+    private fun handleDrawFrame() {
+        surfaceTexture?.let {
+            windowSurface?.makeCurrent()
+            it.updateTexImage()
+            it.getTransformMatrix(transformMatrix)
+            val outputTextureId = renderManager
+                ?.drawFrame(textureId, transformMatrix)
+                ?: GLES30.GL_NONE
+            windowSurface?.swapBuffers()
+            if (isRecording) {
+                encoder?.onFrameAvailable(outputTextureId, it.timestamp)
+            }
         }
-        windowSurface?.makeCurrent()
-        surfaceTexture?.updateTexImage()
-        surfaceTexture?.getTransformMatrix(transformMatrix)
-        renderManager?.drawFrame(textureId, transformMatrix)
-        windowSurface?.swapBuffers()
     }
 
-    private fun switchCamera() {
+    private fun handleSwitchCamera() {
         surfaceTexture?.let {
             CameraEngine.getInstance().switchCamera(context, it)
         }
     }
 
-    private fun startRecording() {
+    private fun handleStartRecording(filePath: String) {
         eglCore?.let {
-            encoder.start(720, 1080, it.eglContext)
+            if (encoder == null) {
+                encoder = HwEncoder()
+            }
+            encoder?.start(it.eglContext, filePath)
+            isRecording = true
         }
-        isRecording = true
     }
 
-    private fun stopRecording() {
-        encoder.stop()
+    private fun handleStopRecording() {
         isRecording = false
+        encoder?.stop()
+        encoder = null
     }
 
-    private fun finishRecording() {
-        if (!isRecording) {
-            encoder.finish()
-        }
-    }
-
-    private fun takePicture(filePath: String) {
+    private fun handleTakePicture(filePath: String) {
         windowSurface?.apply {
             val buffer = GLHelper.getCurrentFrame(
                 getWidth(),

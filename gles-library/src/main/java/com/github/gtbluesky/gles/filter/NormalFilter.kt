@@ -10,7 +10,8 @@ open class NormalFilter : BaseFilter {
 
     constructor(): super()
 
-    constructor(vertexShader: String, fragmentShader: String): super(vertexShader, fragmentShader)
+    constructor(vertexShader: String, fragmentShader: String)
+            : super(vertexShader, fragmentShader)
 
     override fun init() {
         program = GLHelper.createProgram(
@@ -26,10 +27,15 @@ open class NormalFilter : BaseFilter {
         Matrix.setIdentityM(mvpMatrix, 0)
     }
 
-    override fun change(width: Int, height: Int) {
-        this.width = width
-        this.height = height
+    override fun setViewSize(width: Int, height: Int) {
+        viewWidth = width
+        viewHeight = height
         GLES30.glViewport(0, 0, width, height)
+    }
+
+    override fun setTextureSize(width: Int, height: Int) {
+        textureWidth = width
+        textureHeight = height
     }
 
     override fun drawFrame(

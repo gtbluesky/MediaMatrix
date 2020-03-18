@@ -34,10 +34,10 @@ class CameraPreviewActivity :
         setContentView(R.layout.activity_camera_preview)
         initView()
         setListener()
-        startPreview()
+        openCamera()
     }
 
-    private fun startPreview() {
+    private fun openCamera() {
         AndPermission
             .with(this)
             .runtime()
@@ -93,6 +93,7 @@ class CameraPreviewActivity :
         switchIv = findViewById(R.id.switch_iv)
         flashIv = findViewById(R.id.flash_iv)
         recordIv = findViewById(R.id.record_iv)
+        recordIv.drawable.level = 1
     }
 
     private fun setListener() {
@@ -100,7 +101,9 @@ class CameraPreviewActivity :
         flashIv.setOnClickListener(this)
         recordIv.setOnClickListener(this)
         recordIv.setOnLongClickListener {
-            startRecord()
+            if (recordIv.drawable.level == 1) {
+                startRecord()
+            }
             true
         }
     }
@@ -109,13 +112,25 @@ class CameraPreviewActivity :
         when (v?.id) {
             R.id.switch_iv -> matrixCameraFragment.switchCamera()
             R.id.flash_iv -> matrixCameraFragment.toggleTorch()
-            R.id.record_iv -> matrixCameraFragment.takePicture(
-                "${Environment.getExternalStorageDirectory().absolutePath}/pic_${System.currentTimeMillis()}.jpg"
-            )
+            R.id.record_iv -> {
+                if (recordIv.drawable.level == 1) {
+                    takePicture()
+                } else {
+                    stopRecord()
+                }
+            }
         }
     }
 
+    private fun takePicture() {
+        matrixCameraFragment.takePicture(
+            "${Environment.getExternalStorageDirectory().absolutePath}/pic_${System.currentTimeMillis()}.jpg"
+        )
+        showToast("照片已保存")
+    }
+
     private fun startRecord() {
+        showToast("开始录像")
         recordIv.drawable.level = 2
         chronometer.let {
             it.base = SystemClock.elapsedRealtime()
@@ -133,6 +148,11 @@ class CameraPreviewActivity :
             it.setTextColor(Color.WHITE)
         }
         matrixCameraFragment.stopRecording()
+        showToast("视频已保存")
+    }
+
+    private fun showToast(msg: String) {
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
     }
 
 }

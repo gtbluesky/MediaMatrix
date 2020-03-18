@@ -1,16 +1,20 @@
 package com.github.gtbluesky.camera.render
 
+import android.opengl.GLES30
+import android.util.SparseArray
 import com.github.gtbluesky.gles.constant.FilterConstant
 import com.github.gtbluesky.gles.filter.BaseFilter
+import com.github.gtbluesky.gles.filter.NormalFilter
 import com.github.gtbluesky.gles.filter.OESInputFilter
 import com.github.gtbluesky.gles.util.GLHelper
 import java.nio.FloatBuffer
 
 class RenderManager {
 
-    private var filter: BaseFilter? = null
     private var vertexBuffer: FloatBuffer? = null
     private var textureBuffer: FloatBuffer? = null
+    private val filterArray = SparseArray<BaseFilter>()
+    private var outputTextureId = GLES30.GL_NONE
 
     fun init() {
         initBuffers()
@@ -20,23 +24,43 @@ class RenderManager {
     private fun initBuffers() {
         releaseBuffers()
         vertexBuffer = GLHelper.createFloatBuffer(FilterConstant.VERTEX_COORDS)
-        textureBuffer = GLHelper.createFloatBuffer(FilterConstant.OES_TEXTURE_COORDS)
+        textureBuffer = GLHelper.createFloatBuffer(FilterConstant.TEXTURE_COORDS)
     }
 
     private fun initFilter() {
-        filter = OESInputFilter()
-        filter?.init()
+        filterArray.put(0, OESInputFilter().apply { init() })
+        filterArray.put(1, NormalFilter().apply { init() })
     }
 
-    fun setDisplaySize(width: Int, height: Int) {
-        filter?.change(width, height)
-    }
-
-    fun drawFrame(textureId: Int, matrix: FloatArray) {
-        if (filter is OESInputFilter) {
-            (filter as OESInputFilter).transformMatrix = matrix
+    fun setViewSize(width: Int, height: Int) {
+        repeat(filterArray.size()) {
+            filterArray.valueAt(it).let { filter ->
+                filter.setViewSize(width, height)
+                filter.initFrameBuffer(width, height)
+            }
         }
-        filter?.drawFrame(textureId, vertexBuffer!!, textureBuffer!!)
+    }
+
+    fun setTextureSize(width: Int, height: Int) {
+        repeat(filterArray.size()) {
+            filterArray.valueAt(it).let { filter ->
+                filter.setTextureSize(width, height)
+            }
+        }
+    }
+
+    fun drawFrame(textureId: Int, matrix: FloatArray): Int {
+        (filterArray[0] as? OESInputFilter)?.let {
+            it.transformMatrix = matrix
+            outputTextureId = it.drawFrameBuffer(textureId, vertexBuffer!!, textureBuffer!!)
+        }
+        filterArray[1]?.let {
+            it.drawFrame(outputTextureId, vertexBuffer!!, textureBuffer!!)
+        }
+//        else -> {
+//            outputTextureId = filter.drawFrameBuffer(outputTextureId, vertexBuffer!!, textureBuffer!!)
+//        }
+        return outputTextureId
     }
 
     fun release() {
@@ -52,6 +76,8 @@ class RenderManager {
     }
 
     private fun releaseFilters() {
-        filter?.destroy()
+        repeat(filterArray.size()) {
+            filterArray.valueAt(it).destroy()
+        }
     }
 }

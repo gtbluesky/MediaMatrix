@@ -3,9 +3,9 @@ package com.github.gtbluesky.codec
 class CodecParam private constructor() {
 
     // Video
-    var videoWidth = VIDEO_WIDTH
-    var videoHeight = VIDEO_HEIGHT
-    var videoBitRate = VIDEO_BIT_RATE
+    var videoWidth = 0
+    var videoHeight = 0
+    var videoBitRate = 0
     var frameRate = FRAME_RATE
     var iFrameInterval = I_FRAME_INTERVAL
 
@@ -14,19 +14,26 @@ class CodecParam private constructor() {
     var channelCount = CHANNEL_COUNT
     var audioBitRate = AUDIO_BIT_RATE
 
-
     companion object {
-        const val VIDEO_WIDTH = 720
-        const val VIDEO_HEIGHT = 1280
-        const val VIDEO_BIT_RATE = 1 shl 22
         const val FRAME_RATE = 30
-        const val I_FRAME_INTERVAL = 2
+        const val I_FRAME_INTERVAL = 1
 
         const val CHANNEL_COUNT = 2
         const val SAMPLE_RATE = 44100
-        const val AUDIO_BIT_RATE = 64 * 1000
+        const val AUDIO_BIT_RATE = 128000
 
         fun getInstance() = CodecParamHolder.holder
+    }
+
+    fun reset() {
+        videoWidth = 0
+        videoHeight = 0
+        videoBitRate = 0
+        frameRate = FRAME_RATE
+        iFrameInterval = I_FRAME_INTERVAL
+        sampleRate = SAMPLE_RATE
+        channelCount = CHANNEL_COUNT
+        audioBitRate = AUDIO_BIT_RATE
     }
 
     private object CodecParamHolder {

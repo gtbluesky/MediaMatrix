@@ -8,10 +8,9 @@ import android.graphics.SurfaceTexture
 import android.hardware.Camera
 import android.util.Log
 import android.view.Surface
-import java.util.*
-import kotlin.Comparator
-import kotlin.math.abs
-import kotlin.math.sign
+import com.github.gtbluesky.camera.AspectRatioType
+import com.github.gtbluesky.camera.CameraParam
+import com.github.gtbluesky.camera.ResolutionType
 
 class CameraEngine private constructor() {
 
