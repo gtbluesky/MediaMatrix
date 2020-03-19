@@ -16,7 +16,7 @@ abstract class BaseFilter {
     protected var mvpMatrixHandle = GLES30.GL_NONE
     protected var textureUnitHandle = GLES30.GL_NONE
 
-    protected val mvpMatrix = FloatArray(GL_MATRIX_SIZE)
+    val mvpMatrix = FloatArray(GL_MATRIX_SIZE)
     // 纹理宽高，与相机预览宽高一致
     var textureWidth = 0
     var textureHeight = 0
@@ -33,7 +33,7 @@ abstract class BaseFilter {
 
     companion object {
         const val GL_MATRIX_SIZE = 16
-        const val VERTEX_SHADER = """
+        private const val VERTEX_SHADER = """
             attribute vec4 aPosition;
             attribute vec4 aTextureCoord;
             varying vec2 vTextureCoord;
@@ -44,7 +44,7 @@ abstract class BaseFilter {
             }
         """
 
-        const val FRAGMENT_SHADER = """
+        private const val FRAGMENT_SHADER = """
             precision mediump float;
             uniform sampler2D uTextureUnit;
             varying vec2 vTextureCoord;
@@ -57,14 +57,16 @@ abstract class BaseFilter {
     constructor() {
         vertexShader = VERTEX_SHADER
         fragmentShader = FRAGMENT_SHADER
+        initProgram()
     }
 
     constructor(vertexShader: String, fragmentShader: String) {
         this.vertexShader = vertexShader
         this.fragmentShader = fragmentShader
+        initProgram()
     }
 
-    abstract fun init()
+    protected abstract fun initProgram()
 
     abstract fun setViewSize(width: Int, height: Int)
 
@@ -73,7 +75,10 @@ abstract class BaseFilter {
     abstract fun drawFrame(
         textureId: Int,
         vertexBuffer: FloatBuffer,
-        textureBuffer: FloatBuffer
+        textureBuffer: FloatBuffer,
+        clearColor: Boolean = true,
+        x: Int = 0,
+        y: Int = 0
     )
 
     abstract fun drawFrameBuffer(

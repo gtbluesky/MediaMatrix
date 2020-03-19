@@ -29,7 +29,9 @@ class HwVideoHandler(
     private var inputSurface: Surface? = null
     private var eglCore: EglCore? = null
     private var windowSurface: WindowSurface? = null
-    private val recordFilter = NormalFilter()
+    private val recordFilter : NormalFilter by lazy {
+        NormalFilter()
+    }
     private val vertexBuffer: FloatBuffer by lazy {
         GLHelper.createFloatBuffer(FilterConstant.VERTEX_COORDS)
     }
@@ -258,7 +260,6 @@ class HwVideoHandler(
         GLES30.glDisable(GLES30.GL_DEPTH_TEST)
         GLES30.glDisable(GLES30.GL_CULL_FACE)
 
-        recordFilter.init()
         recordFilter.setViewSize(codecParam.videoWidth, codecParam.videoHeight)
         isEncoding = true
     }

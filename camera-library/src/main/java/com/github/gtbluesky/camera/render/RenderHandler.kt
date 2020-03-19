@@ -25,7 +25,9 @@ class RenderHandler(private val context: Context, looper: Looper) :
     private var windowSurface: WindowSurface? = null
     private var surfaceTexture: SurfaceTexture? = null
     private var textureId = GLES30.GL_NONE
-    private var renderManager: RenderManager? = RenderManager()
+    private val renderManager: RenderManager by lazy {
+        RenderManager(context)
+    }
     private val transformMatrix = FloatArray(16)
     private var isRecording = false
     private var encoder: HwEncoder? = null
@@ -120,8 +122,6 @@ class RenderHandler(private val context: Context, looper: Looper) :
         GLES30.glDisable(GLES30.GL_DEPTH_TEST)
         GLES30.glDisable(GLES30.GL_CULL_FACE)
 
-        renderManager?.init()
-
         textureId = GLHelper.createOESTexture()
         surfaceTexture = SurfaceTexture(textureId).also {
             it.setOnFrameAvailableListener(this)
@@ -138,8 +138,6 @@ class RenderHandler(private val context: Context, looper: Looper) :
         GLES30.glDisable(GLES30.GL_DEPTH_TEST)
         GLES30.glDisable(GLES30.GL_CULL_FACE)
 
-        renderManager?.init()
-
         textureId = GLHelper.createOESTexture()
         this.surfaceTexture = SurfaceTexture(textureId).also {
             it.setOnFrameAvailableListener(this)
@@ -153,7 +151,7 @@ class RenderHandler(private val context: Context, looper: Looper) :
 
     private fun handleSurfaceChanged() {
         windowSurface?.makeCurrent()
-        renderManager?.apply {
+        renderManager.apply {
             setViewSize(
                 CameraParam.getInstance().viewWidth,
                 CameraParam.getInstance().viewHeight
@@ -167,7 +165,7 @@ class RenderHandler(private val context: Context, looper: Looper) :
 
     private fun handleSurfaceDestroyed() {
         windowSurface?.makeCurrent()
-        renderManager?.release()
+        renderManager.release()
         CameraEngine.getInstance().let {
             it.stopPreview()
             it.destroy()
@@ -186,9 +184,7 @@ class RenderHandler(private val context: Context, looper: Looper) :
             windowSurface?.makeCurrent()
             it.updateTexImage()
             it.getTransformMatrix(transformMatrix)
-            val outputTextureId = renderManager
-                ?.drawFrame(textureId, transformMatrix)
-                ?: GLES30.GL_NONE
+            val outputTextureId = renderManager.drawFrame(textureId, transformMatrix)
             windowSurface?.swapBuffers()
             if (isRecording) {
                 encoder?.onFrameAvailable(outputTextureId, it.timestamp)

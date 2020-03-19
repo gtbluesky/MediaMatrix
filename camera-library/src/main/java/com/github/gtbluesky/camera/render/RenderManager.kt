@@ -1,40 +1,43 @@
 package com.github.gtbluesky.camera.render
 
+import android.content.Context
 import android.opengl.GLES30
-import android.util.SparseArray
+import com.github.gtbluesky.camera.R
+import com.github.gtbluesky.gles.FilterType
 import com.github.gtbluesky.gles.constant.FilterConstant
-import com.github.gtbluesky.gles.filter.BaseFilter
-import com.github.gtbluesky.gles.filter.NormalFilter
-import com.github.gtbluesky.gles.filter.OESInputFilter
+import com.github.gtbluesky.gles.filter.*
 import com.github.gtbluesky.gles.util.GLHelper
 import java.nio.FloatBuffer
 
-class RenderManager {
+class RenderManager(context: Context) {
 
-    private var vertexBuffer: FloatBuffer? = null
-    private var textureBuffer: FloatBuffer? = null
-    private val filterArray = SparseArray<BaseFilter>()
+    private val vertexBuffer: FloatBuffer by lazy {
+        GLHelper.createFloatBuffer(FilterConstant.VERTEX_COORDS)
+    }
+    private val textureBuffer: FloatBuffer by lazy {
+        GLHelper.createFloatBuffer(FilterConstant.TEXTURE_COORDS)
+    }
+    private val filterMap = HashMap<FilterType, BaseFilter>()
     private var outputTextureId = GLES30.GL_NONE
 
-    fun init() {
-        initBuffers()
-        initFilter()
+    init {
+        initFilter(context)
     }
 
-    private fun initBuffers() {
-        releaseBuffers()
-        vertexBuffer = GLHelper.createFloatBuffer(FilterConstant.VERTEX_COORDS)
-        textureBuffer = GLHelper.createFloatBuffer(FilterConstant.TEXTURE_COORDS)
-    }
-
-    private fun initFilter() {
-        filterArray.put(0, OESInputFilter().apply { init() })
-        filterArray.put(1, NormalFilter().apply { init() })
+    private fun initFilter(context: Context) {
+        filterMap[FilterType.OESInputFilter] = OESInputFilter()
+        filterMap[FilterType.NormalFilter] = NormalFilter()
+        filterMap[FilterType.WatermarkFilter] = WatermarkFilter().apply {
+            setResource(context, R.drawable.wm, 100, 100, 200, 200)
+        }
+        filterMap[FilterType.StickerFilter] = StickerFilter().apply {
+            setResource(context, R.drawable.wm, 100, 300, 200, 200)
+        }
     }
 
     fun setViewSize(width: Int, height: Int) {
-        repeat(filterArray.size()) {
-            filterArray.valueAt(it).let { filter ->
+        filterMap.forEach {
+            it.value.let { filter ->
                 filter.setViewSize(width, height)
                 filter.initFrameBuffer(width, height)
             }
@@ -42,24 +45,25 @@ class RenderManager {
     }
 
     fun setTextureSize(width: Int, height: Int) {
-        repeat(filterArray.size()) {
-            filterArray.valueAt(it).let { filter ->
-                filter.setTextureSize(width, height)
-            }
+        filterMap.forEach {
+            it.value.setTextureSize(width, height)
         }
     }
 
     fun drawFrame(textureId: Int, matrix: FloatArray): Int {
-        (filterArray[0] as? OESInputFilter)?.let {
+        (filterMap[FilterType.OESInputFilter] as? OESInputFilter)?.let {
             it.transformMatrix = matrix
-            outputTextureId = it.drawFrameBuffer(textureId, vertexBuffer!!, textureBuffer!!)
+            outputTextureId = it.drawFrameBuffer(textureId, vertexBuffer, textureBuffer)
         }
-        filterArray[1]?.let {
-            it.drawFrame(outputTextureId, vertexBuffer!!, textureBuffer!!)
+        (filterMap[FilterType.WatermarkFilter] as? WatermarkFilter)?.let {
+            outputTextureId = it.drawFrameBuffer(outputTextureId, vertexBuffer, textureBuffer)
         }
-//        else -> {
-//            outputTextureId = filter.drawFrameBuffer(outputTextureId, vertexBuffer!!, textureBuffer!!)
-//        }
+        (filterMap[FilterType.StickerFilter] as? StickerFilter)?.let {
+            outputTextureId = it.drawFrameBuffer(outputTextureId, vertexBuffer, textureBuffer)
+        }
+        (filterMap[FilterType.NormalFilter] as? NormalFilter)?.let {
+            it.drawFrame(outputTextureId, vertexBuffer, textureBuffer)
+        }
         return outputTextureId
     }
 
@@ -69,15 +73,13 @@ class RenderManager {
     }
 
     private fun releaseBuffers() {
-        vertexBuffer?.clear()
-        vertexBuffer = null
-        textureBuffer?.clear()
-        textureBuffer = null
+        vertexBuffer.clear()
+        textureBuffer.clear()
     }
 
     private fun releaseFilters() {
-        repeat(filterArray.size()) {
-            filterArray.valueAt(it).destroy()
+        filterMap.forEach {
+            it.value.destroy()
         }
     }
 }

@@ -159,7 +159,7 @@ class CameraParam private constructor() {
             previewHeight = it.width
             CodecParam.getInstance().videoWidth = previewWidth
             CodecParam.getInstance().videoHeight = previewHeight
-            CodecParam.getInstance().videoBitRate = previewWidth * previewHeight * 2
+            CodecParam.getInstance().videoBitRate = previewWidth * previewHeight * 3
         }
     }
 

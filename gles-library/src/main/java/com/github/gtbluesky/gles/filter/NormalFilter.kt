@@ -13,7 +13,7 @@ open class NormalFilter : BaseFilter {
     constructor(vertexShader: String, fragmentShader: String)
             : super(vertexShader, fragmentShader)
 
-    override fun init() {
+    override fun initProgram() {
         program = GLHelper.createProgram(
             vertexShader,
             fragmentShader
@@ -30,7 +30,6 @@ open class NormalFilter : BaseFilter {
     override fun setViewSize(width: Int, height: Int) {
         viewWidth = width
         viewHeight = height
-        GLES30.glViewport(0, 0, width, height)
     }
 
     override fun setTextureSize(width: Int, height: Int) {
@@ -41,10 +40,16 @@ open class NormalFilter : BaseFilter {
     override fun drawFrame(
         textureId: Int,
         vertexBuffer: FloatBuffer,
-        textureBuffer: FloatBuffer
+        textureBuffer: FloatBuffer,
+        clearColor: Boolean,
+        x: Int,
+        y: Int
     ) {
-        GLES30.glClearColor(0f ,0f, 0f, 1f)
-        GLES30.glClear(GLES30.GL_COLOR_BUFFER_BIT)
+        GLES30.glViewport(x, y, viewWidth, viewHeight)
+        if (clearColor) {
+            GLES30.glClearColor(0f ,0f, 0f, 1f)
+            GLES30.glClear(GLES30.GL_COLOR_BUFFER_BIT)
+        }
 
         GLES30.glUseProgram(program)
 
