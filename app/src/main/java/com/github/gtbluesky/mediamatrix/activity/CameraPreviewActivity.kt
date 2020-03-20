@@ -1,19 +1,19 @@
 package com.github.gtbluesky.mediamatrix.activity
 
 import android.graphics.Color
+import android.hardware.SensorManager
 import android.os.Bundle
 import android.os.Environment
 import android.os.SystemClock
+import android.util.Log
+import android.view.OrientationEventListener
 import android.view.View
 import android.view.WindowManager
 import android.widget.Chronometer
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.postDelayed
-import com.github.gtbluesky.camera.AspectRatioType
 import com.github.gtbluesky.camera.MatrixCameraFragment
-import com.github.gtbluesky.camera.ResolutionType
 import com.github.gtbluesky.mediamatrix.R
 import com.yanzhenjie.permission.AndPermission
 import com.yanzhenjie.permission.Permission
@@ -26,9 +26,39 @@ class CameraPreviewActivity :
     private lateinit var flashIv: ImageView
     private lateinit var recordIv: ImageView
     private lateinit var matrixCameraFragment: MatrixCameraFragment
+    private var rotation = 0
+
+    private val orientationEventListener: OrientationEventListener by lazy {
+        object : OrientationEventListener(this, SensorManager.SENSOR_DELAY_UI) {
+            override fun onOrientationChanged(orientation: Int) {
+                Log.e(TAG, "orientation=$orientation")
+                rotation = when {
+                    orientation < 45 || orientation >= (270 + 45) -> {
+                        ROTATION_0
+                    }
+                    orientation >= 45 && orientation < (90 + 45) -> {
+                        ROTATION_90
+                    }
+                    orientation >= (90 + 45) && orientation < (180 + 45) -> {
+                        ROTATION_180
+                    }
+                    orientation >= (180 + 45) && orientation < (270 + 45) -> {
+                        ROTATION_270
+                    }
+                    else -> ROTATION_0
+                }
+                Log.e(TAG, "rotation=$rotation")
+            }
+        }
+    }
 
     companion object {
         private const val FRAGMENT_CAMERA = "fragment_camera"
+        private val TAG = CameraPreviewActivity::class.java.simpleName
+        private const val ROTATION_0 = 0
+        private const val ROTATION_90 =90
+        private const val ROTATION_180 = 180
+        private const val ROTATION_270 = 270
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,6 +68,20 @@ class CameraPreviewActivity :
         initView()
         setListener()
         openCamera()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        orientationEventListener.let {
+            if (it.canDetectOrientation()) {
+                it.enable()
+            }
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        orientationEventListener.disable()
     }
 
     private fun openCamera() {
@@ -127,7 +171,8 @@ class CameraPreviewActivity :
 
     private fun takePicture() {
         matrixCameraFragment.takePicture(
-            "${Environment.getExternalStorageDirectory().absolutePath}/pic_${System.currentTimeMillis()}.jpg"
+            "${Environment.getExternalStorageDirectory().absolutePath}/pic_${System.currentTimeMillis()}.jpg",
+            rotation
         )
         showToast("照片已保存")
     }
@@ -140,7 +185,10 @@ class CameraPreviewActivity :
             it.start()
             it.setTextColor(Color.RED)
         }
-        matrixCameraFragment.startRecording("${Environment.getExternalStorageDirectory().absolutePath}/vod_${System.currentTimeMillis()}.mp4")
+        matrixCameraFragment.startRecording(
+            "${Environment.getExternalStorageDirectory().absolutePath}/vod_${System.currentTimeMillis()}.mp4",
+            rotation
+        )
     }
 
     private fun stopRecord() {

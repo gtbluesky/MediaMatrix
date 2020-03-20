@@ -119,7 +119,7 @@ class HwAudioHandler(
             val index = it.dequeueInputBuffer(0)
             if (index >= 0) {
                 var length = 0
-                getInputBuffer(it, index)?.also { buffer ->
+                CodecUtil.getInputBuffer(it, index)?.also { buffer ->
                     buffer.clear()
                     length = audioRecord?.read(buffer, minBufferSize) ?: 0
                 }
@@ -146,7 +146,7 @@ class HwAudioHandler(
                             it.releaseOutputBuffer(outIndex, false)
                             return true
                         }
-                        getOutputBuffer(it, outIndex)?.let { outputBuffer ->
+                        CodecUtil.getOutputBuffer(it, outIndex)?.let { outputBuffer ->
                             outputBuffer.position(audioBufferInfo.offset)
                             if (encoder.muxerStarted && audioBufferInfo.presentationTimeUs > 0) {
                                 try {

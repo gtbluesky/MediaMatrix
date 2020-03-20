@@ -99,7 +99,7 @@ class RenderHandler(private val context: Context, looper: Looper) :
             }
             MSG_START_RECORDING -> {
                 (msg.obj as? String)?.let {
-                    handleStartRecording(it)
+                    handleStartRecording(it, msg.arg1)
                 }
             }
             MSG_STOP_RECORDING -> {
@@ -107,7 +107,7 @@ class RenderHandler(private val context: Context, looper: Looper) :
             }
             MSG_TAKE_PICTURE -> {
                 (msg.obj as? String)?.let {
-                    handleTakePicture(it)
+                    handleTakePicture(it, msg.arg1)
                 }
             }
             MSG_TOGGLE_TORCH -> {
@@ -208,7 +208,10 @@ class RenderHandler(private val context: Context, looper: Looper) :
         }
     }
 
-    private fun handleStartRecording(filePath: String) {
+    private fun handleStartRecording(
+        filePath: String,
+        rotation: Int
+    ) {
         eglCore?.let {
             if (encoder == null) {
                 encoder = HwEncoder()
@@ -224,7 +227,10 @@ class RenderHandler(private val context: Context, looper: Looper) :
         encoder = null
     }
 
-    private fun handleTakePicture(filePath: String) {
+    private fun handleTakePicture(
+        filePath: String,
+        rotation: Int
+    ) {
         windowSurface?.apply {
             val buffer = GLHelper.getCurrentFrame(
                 getWidth(),
@@ -236,7 +242,8 @@ class RenderHandler(private val context: Context, looper: Looper) :
                     buffer,
                     it.previewWidth.toFloat() / getWidth(),
                     getWidth(),
-                    getHeight()
+                    getHeight(),
+                    rotation
                 )
             }
             Log.d(TAG, "照片保存在：$filePath")

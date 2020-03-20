@@ -138,9 +138,13 @@ class MatrixCameraFragment : Fragment() {
 
     fun switchCamera() = previewRenderer?.switchCamera()
 
-    fun takePicture(filePath: String) = previewRenderer?.takePicture(filePath)
+    fun takePicture(filePath: String, rotation: Int = 0) {
+        previewRenderer?.takePicture(filePath, rotation)
+    }
 
-    fun startRecording(filePath: String) = previewRenderer?.startRecording(filePath)
+    fun startRecording(filePath: String, rotation: Int = 0) {
+        previewRenderer?.startRecording(filePath, rotation)
+    }
 
     fun stopRecording() = previewRenderer?.stopRecording()
 

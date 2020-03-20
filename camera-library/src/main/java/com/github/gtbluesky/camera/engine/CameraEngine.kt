@@ -152,7 +152,6 @@ class CameraEngine private constructor() {
             if (toggle) Camera.Parameters.FLASH_MODE_TORCH
             else Camera.Parameters.FLASH_MODE_OFF
         camera?.parameters = cameraParams
-
     }
 
     fun changeResolution(

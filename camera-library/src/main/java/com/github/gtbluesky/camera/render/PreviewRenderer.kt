@@ -72,10 +72,12 @@ class PreviewRenderer(private val context: Context) {
         }
     }
 
-    fun startRecording(filePath: String) {
+    fun startRecording(filePath: String, rotation: Int) {
         renderHandler.apply {
             sendMessage(obtainMessage(
                 RenderHandler.MSG_START_RECORDING,
+                rotation,
+                rotation,
                 filePath
             ))
         }
@@ -89,10 +91,12 @@ class PreviewRenderer(private val context: Context) {
         }
     }
 
-    fun takePicture(filePath: String) {
+    fun takePicture(filePath: String, rotation: Int) {
         renderHandler.apply {
             sendMessage(obtainMessage(
                 RenderHandler.MSG_TAKE_PICTURE,
+                rotation,
+                rotation,
                 filePath
             ))
         }

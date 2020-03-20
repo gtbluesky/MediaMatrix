@@ -145,7 +145,7 @@ class HwVideoHandler(
                 val outputBufferIndex = it.dequeueOutputBuffer(videoBufferInfo, TIMEOUT_USEC)
                 Log.e(TAG, "关键帧：${videoBufferInfo.flags and MediaCodec.BUFFER_FLAG_KEY_FRAME != 0}")
                 if (outputBufferIndex >= 0) {
-                    getOutputBuffer(it, outputBufferIndex)?.let { outputBuffer ->
+                    CodecUtil.getOutputBuffer(it, outputBufferIndex)?.let { outputBuffer ->
                         if (videoBufferInfo.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG != 0) {
                             // The codec config data was pulled out and fed to the muxer when we got
                             // the INFO_OUTPUT_FORMAT_CHANGED status.  Ignore it.
