@@ -6,6 +6,8 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.view.Surface
 import android.view.SurfaceHolder
+import com.github.gtbluesky.camera.AspectRatioType
+import com.github.gtbluesky.camera.ResolutionType
 
 class PreviewRenderer(private val context: Context) {
     private var renderThread: HandlerThread
@@ -102,6 +104,21 @@ class PreviewRenderer(private val context: Context) {
                 RenderHandler.MSG_TOGGLE_TORCH,
                 turnOn
             ))
+        }
+    }
+
+    fun changeResolution(
+        resolutionType: ResolutionType,
+        aspectRatioType: AspectRatioType
+    ) {
+        renderHandler.apply {
+            sendMessage(
+                obtainMessage(
+                    RenderHandler.MSG_CHANGE_RESOLUTION,
+                    resolutionType.ordinal,
+                    aspectRatioType.ordinal
+                )
+            )
         }
     }
 }

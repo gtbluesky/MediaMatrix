@@ -10,7 +10,10 @@ import android.widget.Chronometer
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.postDelayed
+import com.github.gtbluesky.camera.AspectRatioType
 import com.github.gtbluesky.camera.MatrixCameraFragment
+import com.github.gtbluesky.camera.ResolutionType
 import com.github.gtbluesky.mediamatrix.R
 import com.yanzhenjie.permission.AndPermission
 import com.yanzhenjie.permission.Permission

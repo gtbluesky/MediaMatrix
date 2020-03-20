@@ -6,6 +6,7 @@ import android.view.*
 import android.widget.RelativeLayout
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import com.github.gtbluesky.camera.engine.CameraEngine
 import com.github.gtbluesky.camera.render.PreviewRenderer
 
 class MatrixCameraFragment : Fragment() {
@@ -148,5 +149,15 @@ class MatrixCameraFragment : Fragment() {
             torchOn = it
             previewRenderer?.toggleTorch(it)
         }
+    }
+
+    fun changeResolution(
+        resolutionType: ResolutionType,
+        aspectRatioType: AspectRatioType
+    ) {
+        previewRenderer?.changeResolution(
+            resolutionType,
+            aspectRatioType
+        )
     }
 }

@@ -9,8 +9,10 @@ import android.os.Message
 import android.util.Log
 import android.view.Surface
 import android.view.SurfaceHolder
+import com.github.gtbluesky.camera.AspectRatioType
 import com.github.gtbluesky.camera.engine.CameraEngine
 import com.github.gtbluesky.camera.CameraParam
+import com.github.gtbluesky.camera.ResolutionType
 import com.github.gtbluesky.codec.CodecParam
 import com.github.gtbluesky.codec.HwEncoder
 import com.github.gtbluesky.gles.egl.EglCore
@@ -64,6 +66,8 @@ class RenderHandler(private val context: Context, looper: Looper) :
         const val MSG_CHANGE_DYNAMIC_RESOURCE = 0x0f
         // 开关闪关灯
         const val MSG_TOGGLE_TORCH = 0x10
+        // 调整分辨率和画幅
+        const val MSG_CHANGE_RESOLUTION = 0x11
     }
 
     override fun handleMessage(msg: Message) {
@@ -108,8 +112,14 @@ class RenderHandler(private val context: Context, looper: Looper) :
             }
             MSG_TOGGLE_TORCH -> {
                 (msg.obj as? Boolean)?.let {
-                    CameraEngine.getInstance().toggleTorch(it)
+                    handleToggleTorch(it)
                 }
+            }
+            MSG_CHANGE_RESOLUTION -> {
+                handleChangeResolution(
+                    enumValues<ResolutionType>()[msg.arg1],
+                    enumValues<AspectRatioType>()[msg.arg2]
+                )
             }
         }
     }
@@ -230,6 +240,24 @@ class RenderHandler(private val context: Context, looper: Looper) :
                 )
             }
             Log.d(TAG, "照片保存在：$filePath")
+        }
+    }
+
+    private fun handleToggleTorch(toggle: Boolean) {
+        CameraEngine.getInstance().toggleTorch(toggle)
+    }
+
+    private fun handleChangeResolution(
+        resolutionType: ResolutionType,
+        aspectRatioType: AspectRatioType
+    ) {
+        surfaceTexture?.let {
+            CameraEngine.getInstance().changeResolution(
+                context,
+                resolutionType,
+                aspectRatioType,
+                it
+            )
         }
     }
 
