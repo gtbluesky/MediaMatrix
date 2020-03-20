@@ -214,9 +214,12 @@ class RenderHandler(private val context: Context, looper: Looper) :
     ) {
         eglCore?.let {
             if (encoder == null) {
-                encoder = HwEncoder()
+                encoder = HwEncoder(rotation)
             }
-            encoder?.start(it.eglContext, filePath)
+            encoder?.start(
+                it.eglContext,
+                filePath
+            )
             isRecording = true
         }
     }

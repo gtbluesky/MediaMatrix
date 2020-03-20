@@ -5,6 +5,7 @@ import android.media.MediaCodecInfo
 import android.media.MediaFormat
 import android.opengl.EGLContext
 import android.opengl.GLES30
+import android.opengl.Matrix
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -58,7 +59,7 @@ class HwVideoHandler(
         when (msg.what) {
             HwEncoder.MSG_START_ENCODING -> {
                 (msg.obj as? EGLContext)?.let {
-                    handleStart(it)
+                    handleStart(it, msg.arg1)
                 }
             }
             HwEncoder.MSG_RENDER -> {
@@ -75,11 +76,21 @@ class HwVideoHandler(
         }
     }
 
-    fun createVideoEncoder(): Boolean {
+    fun createVideoEncoder(rotation: Int): Boolean {
         videoBufferInfo = MediaCodec.BufferInfo()
+        val videoWidth: Int
+        val videoHeight: Int
+        if (rotation % 180 == 0) {
+            videoWidth = codecParam.videoWidth
+            videoHeight = codecParam.videoHeight
+        } else {
+            videoWidth = codecParam.videoHeight
+            videoHeight = codecParam.videoWidth
+        }
         val format = MediaFormat.createVideoFormat(
             VIDEO_ENCODE_MIME_TYPE,
-            codecParam.videoWidth, codecParam.videoHeight
+            videoWidth,
+            videoHeight
         ).apply {
             setInteger(
                 MediaFormat.KEY_COLOR_FORMAT,
@@ -133,9 +144,6 @@ class HwVideoHandler(
     }
 
     private fun drainVideoEncoder(endOfStream: Boolean) {
-//        if (!isEncoding) {
-//            return
-//        }
         Log.e(TAG, "endOfStream=$endOfStream")
         videoEncoder?.let {
             if (endOfStream) {
@@ -240,7 +248,10 @@ class HwVideoHandler(
         drainVideoEncoder(false)
     }
 
-    private fun handleStart(eglContext: EGLContext) {
+    private fun handleStart(
+        eglContext: EGLContext,
+        rotation: Int
+    ) {
         baseTimeStamo = System.nanoTime()
         videoEncoder?.start()
         windowSurface?.apply {
@@ -259,8 +270,20 @@ class HwVideoHandler(
 
         GLES30.glDisable(GLES30.GL_DEPTH_TEST)
         GLES30.glDisable(GLES30.GL_CULL_FACE)
-
-        recordFilter.setViewSize(codecParam.videoWidth, codecParam.videoHeight)
+        recordFilter.mvpMatrix.let {
+            Matrix.setIdentityM(it, 0)
+            Matrix.rotateM(it, 0, -rotation.toFloat(), 0f, 0f, 1f)
+        }
+        val videoWidth: Int
+        val videoHeight: Int
+        if (rotation % 180 == 0) {
+            videoWidth = codecParam.videoWidth
+            videoHeight = codecParam.videoHeight
+        } else {
+            videoWidth = codecParam.videoHeight
+            videoHeight = codecParam.videoWidth
+        }
+        recordFilter.setViewSize(videoWidth, videoHeight)
         isEncoding = true
     }
 

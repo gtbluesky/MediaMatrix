@@ -116,7 +116,7 @@ object BitmapUtil {
             }.let {
                 val matrix = Matrix().apply {
                     reset()
-                    postScale(scale, -1 * scale)
+                    postScale(scale, -scale)
                     postRotate(rotation.toFloat())
                 }
                 handleBitmapWithMatrix(it, matrix)

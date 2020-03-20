@@ -36,8 +36,10 @@ open class WatermarkFilter : NormalFilter() {
     override fun postDraw() {
         GLES30.glEnable(GLES30.GL_BLEND)
         setBlendFun()
-        Matrix.setIdentityM(watermark.mvpMatrix, 0)
-        Matrix.scaleM(watermark.mvpMatrix, 0, 1f, -1f, 1f)
+        watermark.mvpMatrix.let {
+            Matrix.setIdentityM(it, 0)
+            Matrix.scaleM(it, 0, 1f, -1f, 1f)
+        }
         watermark.setViewSize(width, height)
         watermark.drawFrame(
             textureId,

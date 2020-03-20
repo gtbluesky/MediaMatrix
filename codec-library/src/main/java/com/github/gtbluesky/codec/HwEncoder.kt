@@ -5,7 +5,7 @@ import android.opengl.EGLContext
 import android.os.HandlerThread
 import java.io.IOException
 
-class HwEncoder {
+class HwEncoder(private val rotation: Int) {
 
     var mediaMuxer: MediaMuxer? = null
         private set
@@ -43,7 +43,7 @@ class HwEncoder {
             .apply {
                 start()
                 videoHandler = HwVideoHandler(looper, this@HwEncoder).also {
-                    it.createVideoEncoder()
+                    it.createVideoEncoder(rotation)
                 }
             }
         if (enableAudio) {
@@ -67,11 +67,19 @@ class HwEncoder {
         return true
     }
 
-    fun start(eglContext: EGLContext, filePath: String) {
+    fun start(
+        eglContext: EGLContext,
+        filePath: String
+    ) {
         createMuxer(filePath)
         videoHandler?.apply {
             sendMessage(
-                obtainMessage(MSG_START_ENCODING, eglContext)
+                obtainMessage(
+                    MSG_START_ENCODING,
+                    rotation,
+                    rotation,
+                    eglContext
+                )
             )
         }
         audioHandler?.apply {
