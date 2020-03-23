@@ -13,7 +13,6 @@ import com.github.gtbluesky.camera.CameraParam
 import com.github.gtbluesky.camera.ResolutionType
 
 class CameraEngine private constructor() {
-
     private var camera: Camera? = null
     private lateinit var frontCameraInfo: Camera.CameraInfo
     private lateinit var backCameraInfo: Camera.CameraInfo
@@ -104,13 +103,14 @@ class CameraEngine private constructor() {
             camera?.parameters = cameraParams
             return
         }
-        cameraParams.focusMode = Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO
+        Camera.Parameters.FOCUS_MODE_AUTO
         val supportCustomFocus = cameraParams.maxNumFocusAreas > 0
         val supportMetering = cameraParams.maxNumMeteringAreas > 0
-        val left = clamp(point.x * 2000 / cameraParam.viewWidth - 1000 - areaSize / 2)
-        val top = clamp(point.y * 2000 / cameraParam.viewHeight - 1000 - areaSize / 2)
-        val right = clamp(point.x * 2000 / cameraParam.viewWidth - 1000 + areaSize / 2)
-        val bottom = clamp(point.y * 2000 / cameraParam.viewHeight - 1000 + areaSize / 2)
+        val areaHalf = areaSize / 2
+        val left = clamp((point.x - areaHalf) * 2000 / cameraParam.viewWidth - 1000)
+        val top = clamp((point.y - areaHalf) * 2000 / cameraParam.viewHeight - 1000)
+        val right = clamp((point.x + areaHalf) * 2000 / cameraParam.viewWidth - 1000)
+        val bottom = clamp((point.y + areaHalf) * 2000 / cameraParam.viewHeight - 1000)
         val areas = arrayListOf(Camera.Area(Rect(left, top, right, bottom), 1000))
         if (supportCustomFocus) {
             cameraParams.focusAreas = areas
@@ -121,8 +121,12 @@ class CameraEngine private constructor() {
         camera?.apply {
             cancelAutoFocus()
             parameters = cameraParams
+            cameraParam.onCameraFocusListener?.also {
+                autoFocus { success, _ ->
+                    it.onCameraFocus(success)
+                }
+            }
         }
-        cameraParam.cameraAutoFocusCallback?.also { camera?.autoFocus(it) }
     }
 
     private fun clamp(value: Int, min: Int = -1000, max: Int = 1000): Int {

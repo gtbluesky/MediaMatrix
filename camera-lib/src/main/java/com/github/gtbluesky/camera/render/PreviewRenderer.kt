@@ -23,91 +23,111 @@ class PreviewRenderer(private val context: Context) {
 
     fun bindSurface(surface: Surface) {
         renderHandler.apply {
-            sendMessage(obtainMessage(
-                RenderHandler.MSG_SURFACE_CREATED,
-                surface
-            ))
+            sendMessage(
+                obtainMessage(
+                    RenderHandler.MSG_SURFACE_CREATED,
+                    surface
+                )
+            )
         }
     }
 
     fun bindSurface(surfaceHolder: SurfaceHolder) {
         renderHandler.apply {
-            sendMessage(obtainMessage(
-                RenderHandler.MSG_SURFACE_CREATED,
-                surfaceHolder
-            ))
+            sendMessage(
+                obtainMessage(
+                    RenderHandler.MSG_SURFACE_CREATED,
+                    surfaceHolder
+                )
+            )
         }
     }
 
     fun bindSurface(surfaceTexture: SurfaceTexture) {
         renderHandler.apply {
-            sendMessage(obtainMessage(
-                RenderHandler.MSG_SURFACE_CREATED,
-                surfaceTexture
-            ))
+            sendMessage(
+                obtainMessage(
+                    RenderHandler.MSG_SURFACE_CREATED,
+                    surfaceTexture
+                )
+            )
         }
     }
 
     fun unBindSurface() {
         renderHandler.apply {
-            sendMessage(obtainMessage(
-                RenderHandler.MSG_SURFACE_DESTROYED
-            ))
+            sendMessage(
+                obtainMessage(
+                    RenderHandler.MSG_SURFACE_DESTROYED
+                )
+            )
         }
     }
 
     fun changePreviewSize() {
         renderHandler.apply {
-            sendMessage(obtainMessage(
-                RenderHandler.MSG_SURFACE_CHANGED
-            ))
+            sendMessage(
+                obtainMessage(
+                    RenderHandler.MSG_SURFACE_CHANGED
+                )
+            )
         }
     }
 
     fun switchCamera() {
         renderHandler.apply {
-            sendMessage(obtainMessage(
-                RenderHandler.MSG_SWITCH_CAMERA
-            ))
+            sendMessage(
+                obtainMessage(
+                    RenderHandler.MSG_SWITCH_CAMERA
+                )
+            )
         }
     }
 
     fun startRecording(filePath: String, rotation: Int) {
         renderHandler.apply {
-            sendMessage(obtainMessage(
-                RenderHandler.MSG_START_RECORDING,
-                rotation,
-                rotation,
-                filePath
-            ))
+            sendMessage(
+                obtainMessage(
+                    RenderHandler.MSG_START_RECORDING,
+                    rotation,
+                    rotation,
+                    filePath
+                )
+            )
         }
     }
 
     fun stopRecording() {
         renderHandler.apply {
-            sendMessage(obtainMessage(
-                RenderHandler.MSG_STOP_RECORDING
-            ))
+            sendMessage(
+                obtainMessage(
+                    RenderHandler.MSG_STOP_RECORDING
+                )
+            )
         }
     }
 
     fun takePicture(filePath: String, rotation: Int) {
         renderHandler.apply {
-            sendMessage(obtainMessage(
-                RenderHandler.MSG_TAKE_PICTURE,
-                rotation,
-                rotation,
-                filePath
-            ))
+            sendMessage(
+                obtainMessage(
+                    RenderHandler.MSG_TAKE_PICTURE,
+                    rotation,
+                    rotation,
+                    filePath
+                )
+            )
         }
     }
 
     fun toggleTorch(turnOn: Boolean) {
         renderHandler.apply {
-            sendMessage(obtainMessage(
-                RenderHandler.MSG_TOGGLE_TORCH,
-                turnOn
-            ))
+            sendMessage(
+                obtainMessage(
+                    RenderHandler.MSG_TOGGLE_TORCH,
+                    turnOn
+                )
+            )
         }
     }
 

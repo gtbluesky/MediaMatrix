@@ -1,13 +1,18 @@
 package com.github.gtbluesky.camera
 
+import android.graphics.Point
 import android.graphics.SurfaceTexture
 import android.os.Bundle
 import android.view.*
 import android.widget.RelativeLayout
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import com.github.gtbluesky.camera.controller.OrientationController
+import com.github.gtbluesky.camera.controller.SensorController
 import com.github.gtbluesky.camera.engine.CameraEngine
+import com.github.gtbluesky.camera.listener.OnRotationChangeListener
 import com.github.gtbluesky.camera.listener.OnZoomChangeListener
+import com.github.gtbluesky.camera.listener.StartFocusCallback
 import com.github.gtbluesky.camera.render.PreviewRenderer
 
 class MatrixCameraFragment : Fragment() {
@@ -23,6 +28,26 @@ class MatrixCameraFragment : Fragment() {
 
     var torchOn = false
         private set
+    private var rotation = 0
+
+    private val orientationController: OrientationController by lazy {
+        OrientationController(context!!).also {
+            it.onRotationChangeListener = object : OnRotationChangeListener {
+                override fun onRotationChange(rotation: Int) {
+                    this@MatrixCameraFragment.rotation = rotation
+                }
+            }
+        }
+    }
+    private val sensorController: SensorController by lazy {
+        SensorController(context!!).also {
+            it.startFocusCallback = object : StartFocusCallback {
+                override fun onStart() {
+                    CameraEngine.getInstance().setAutoFocus()
+                }
+            }
+        }
+    }
 
     companion object {
         private val TAG = MatrixCameraFragment::class.java.simpleName
@@ -93,6 +118,12 @@ class MatrixCameraFragment : Fragment() {
             contentView.addView(it)
             contentView.setOnTouchListener { v, event ->
                 if (event.pointerCount == 1) {
+                    if (event.action == MotionEvent.ACTION_UP
+                        && event.eventTime - event.downTime < 500
+                    ) {
+                        CameraEngine.getInstance()
+                            .setAutoFocus(Point(event.x.toInt(), event.y.toInt()))
+                    }
                     true
                 } else {
                     scaleGestureDetector.onTouchEvent(event)
@@ -130,6 +161,22 @@ class MatrixCameraFragment : Fragment() {
 //        }
     }
 
+    override fun onResume() {
+        super.onResume()
+        orientationController.let {
+            if (it.canDetectOrientation()) {
+                it.enable()
+            }
+        }
+        sensorController.register()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        orientationController.disable()
+        sensorController.unregister()
+    }
+
     fun startPrewiew() {
         if (context == null) {
             Toast.makeText(
@@ -152,12 +199,24 @@ class MatrixCameraFragment : Fragment() {
 
     fun switchCamera() = previewRenderer?.switchCamera()
 
-    fun takePicture(filePath: String, rotation: Int = 0) {
-        previewRenderer?.takePicture(filePath, rotation)
+    fun takePicture(filePath: String, useRotation: Boolean) {
+        previewRenderer?.takePicture(
+            filePath, if (useRotation) {
+                rotation
+            } else {
+                OrientationController.ROTATION_0
+            }
+        )
     }
 
-    fun startRecording(filePath: String, rotation: Int = 0) {
-        previewRenderer?.startRecording(filePath, rotation)
+    fun startRecording(filePath: String, useRotation: Boolean) {
+        previewRenderer?.startRecording(
+            filePath, if (useRotation) {
+                rotation
+            } else {
+                OrientationController.ROTATION_0
+            }
+        )
     }
 
     fun stopRecording() = previewRenderer?.stopRecording()
@@ -179,7 +238,8 @@ class MatrixCameraFragment : Fragment() {
         )
     }
 
-    private inner class ZoomScaleGestureDetector : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+    private inner class ZoomScaleGestureDetector :
+        ScaleGestureDetector.SimpleOnScaleGestureListener() {
         override fun onScale(detector: ScaleGestureDetector): Boolean {
             val scale = detector.currentSpan / minSpan
             val zoomScale = CameraEngine.getInstance().changeZoom(scale)
@@ -193,7 +253,10 @@ class MatrixCameraFragment : Fragment() {
         }
 
         override fun onScaleEnd(detector: ScaleGestureDetector?) {
-            onZoomChangeListener?.onZoomChange(CameraEngine.getInstance().getCurrentZoomScale(), true)
+            onZoomChangeListener?.onZoomChange(
+                CameraEngine.getInstance().getCurrentZoomScale(),
+                true
+            )
             super.onScaleEnd(detector)
         }
     }

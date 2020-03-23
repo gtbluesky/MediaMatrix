@@ -2,9 +2,9 @@ package com.github.gtbluesky.camera
 
 import android.hardware.Camera
 import android.util.Log
+import com.github.gtbluesky.camera.listener.OnCameraFocusListener
 import com.github.gtbluesky.codec.CodecParam
 import java.util.*
-import kotlin.math.abs
 import kotlin.math.sign
 
 class CameraParam private constructor() {
@@ -31,7 +31,7 @@ class CameraParam private constructor() {
     var previewHeight = 0
         private set
 
-    var cameraAutoFocusCallback: Camera.AutoFocusCallback? = null
+    var onCameraFocusListener: OnCameraFocusListener? = null
 
     var viewWidth = 0
     var viewHeight = 0
@@ -48,8 +48,7 @@ class CameraParam private constructor() {
         private const val RATIO_3_4 = 0.75f
         private const val RATIO_9_16 = 0.5625f
 
-        fun getInstance() =
-            CameraParamHolder.holder
+        fun getInstance() = CameraParamHolder.holder
 
         private val sizeComparator = Comparator<Camera.Size> { o1, o2 ->
             (o1.width * o1.height - o2.width * o2.height).sign
@@ -61,7 +60,8 @@ class CameraParam private constructor() {
             expectHeight: Int,
             closeEnough: Double = 0.0
         ): Camera.Size {
-            Collections.sort(sizes,
+            Collections.sort(
+                sizes,
                 sizeComparator
             )
             val targetRatio = expectWidth.toDouble() / expectHeight.toDouble()
@@ -129,7 +129,7 @@ class CameraParam private constructor() {
         expectHeight = (expectWidth / ratio).toInt()
         previewWidth = 0
         previewHeight = 0
-        cameraAutoFocusCallback = null
+        onCameraFocusListener = null
         viewWidth = 0
         viewHeight = 0
         cameraId =

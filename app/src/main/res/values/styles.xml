@@ -10,4 +10,10 @@
 
     <style name="NoActionBar" parent="Theme.AppCompat.Light.NoActionBar"/>
 
+    <declare-styleable name="FocusImageView">
+        <attr name="focusingDrawable" format="integer" />
+        <attr name="successDrawable" format="integer" />
+        <attr name="failDrawable" format="integer" />
+    </declare-styleable>
+
 </resources>
