@@ -11,14 +11,14 @@ static ANativeWindow *window = nullptr;
 
 extern "C" {
 JNIEXPORT void JNICALL
-Java_com_github_gtbluesky_nativeopengl_NativeGL_nativeInit(
+Java_com_gtbluesky_nativeopengl_NativeGL_nativeInit(
         JNIEnv *env,
         jclass jclz) {
     glLooper = new GLLooper();
 }
 
 JNIEXPORT void JNICALL
-Java_com_github_gtbluesky_nativeopengl_NativeGL_nativeRelease(
+Java_com_gtbluesky_nativeopengl_NativeGL_nativeRelease(
         JNIEnv *env,
         jclass jclz) {
     if (glLooper) {
@@ -33,7 +33,7 @@ Java_com_github_gtbluesky_nativeopengl_NativeGL_nativeRelease(
 }
 
 JNIEXPORT void JNICALL
-Java_com_github_gtbluesky_nativeopengl_NativeGL_nativeSurfaceCreated(
+Java_com_gtbluesky_nativeopengl_NativeGL_nativeSurfaceCreated(
         JNIEnv *env,
         jclass jclz,
         jobject surface) {
@@ -48,7 +48,7 @@ Java_com_github_gtbluesky_nativeopengl_NativeGL_nativeSurfaceCreated(
 }
 
 JNIEXPORT void JNICALL
-Java_com_github_gtbluesky_nativeopengl_NativeGL_nativeSurfaceChanged(
+Java_com_gtbluesky_nativeopengl_NativeGL_nativeSurfaceChanged(
         JNIEnv *env,
         jclass jclz,
         jint width,
@@ -59,7 +59,7 @@ Java_com_github_gtbluesky_nativeopengl_NativeGL_nativeSurfaceChanged(
 }
 
 JNIEXPORT void JNICALL
-Java_com_github_gtbluesky_nativeopengl_NativeGL_nativeSurfaceDestroyed(
+Java_com_gtbluesky_nativeopengl_NativeGL_nativeSurfaceDestroyed(
         JNIEnv *env,
         jclass jclz) {
     if (glLooper) {
@@ -68,7 +68,7 @@ Java_com_github_gtbluesky_nativeopengl_NativeGL_nativeSurfaceDestroyed(
 }
 
 JNIEXPORT void JNICALL
-Java_com_github_gtbluesky_nativeopengl_NativeGL_nativeRequestRender(
+Java_com_gtbluesky_nativeopengl_NativeGL_nativeRequestRender(
         JNIEnv *env,
         jclass jclz) {
 //mRenderer->requestRenderFrame();
