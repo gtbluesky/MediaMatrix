@@ -11,9 +11,11 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.Chronometer
 import android.widget.ImageView
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.github.gtbluesky.camera.MatrixCameraFragment
+import com.github.gtbluesky.camera.listener.OnZoomChangeListener
 import com.github.gtbluesky.mediamatrix.R
 import com.yanzhenjie.permission.AndPermission
 import com.yanzhenjie.permission.Permission
@@ -25,6 +27,7 @@ class CameraPreviewActivity :
     private lateinit var switchIv: ImageView
     private lateinit var flashIv: ImageView
     private lateinit var recordIv: ImageView
+    private lateinit var zoomTv: TextView
     private lateinit var matrixCameraFragment: MatrixCameraFragment
     private var rotation = 0
 
@@ -95,6 +98,16 @@ class CameraPreviewActivity :
             ).onGranted {
                 MatrixCameraFragment.newInstance(previewNow = true).let {
                     matrixCameraFragment = it
+                    it.onZoomChangeListener = object : OnZoomChangeListener {
+                        override fun onZoomChange(scale: Float, completed: Boolean) {
+                            zoomTv.text = "${scale}X"
+                            zoomTv.visibility = if (completed) {
+                                View.GONE
+                            } else {
+                                View.VISIBLE
+                            }
+                        }
+                    }
                     supportFragmentManager
                         .beginTransaction()
                         .replace(
@@ -141,6 +154,7 @@ class CameraPreviewActivity :
         flashIv = findViewById(R.id.flash_iv)
         recordIv = findViewById(R.id.record_iv)
         recordIv.drawable.level = 1
+        zoomTv = findViewById(R.id.tv_zoom)
     }
 
     private fun setListener() {

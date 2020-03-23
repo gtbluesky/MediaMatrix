@@ -7,6 +7,7 @@ import android.widget.RelativeLayout
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.github.gtbluesky.camera.engine.CameraEngine
+import com.github.gtbluesky.camera.listener.OnZoomChangeListener
 import com.github.gtbluesky.camera.render.PreviewRenderer
 
 class MatrixCameraFragment : Fragment() {
@@ -14,6 +15,12 @@ class MatrixCameraFragment : Fragment() {
     private lateinit var contentView: RelativeLayout
     private var previewRenderer: PreviewRenderer? = null
     private var previewNow = false
+    private val scaleGestureDetector: ScaleGestureDetector by lazy {
+        ScaleGestureDetector(context, ZoomScaleGestureDetector())
+    }
+    private var minSpan = 0f
+    var onZoomChangeListener: OnZoomChangeListener? = null
+
     var torchOn = false
         private set
 
@@ -84,6 +91,13 @@ class MatrixCameraFragment : Fragment() {
                 override fun onSurfaceTextureUpdated(surface: SurfaceTexture?) {}
             }
             contentView.addView(it)
+            contentView.setOnTouchListener { v, event ->
+                if (event.pointerCount == 1) {
+                    true
+                } else {
+                    scaleGestureDetector.onTouchEvent(event)
+                }
+            }
         }
 
 //        SurfaceView(context).also {
@@ -163,5 +177,24 @@ class MatrixCameraFragment : Fragment() {
             resolutionType,
             aspectRatioType
         )
+    }
+
+    private inner class ZoomScaleGestureDetector : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+        override fun onScale(detector: ScaleGestureDetector): Boolean {
+            val scale = detector.currentSpan / minSpan
+            val zoomScale = CameraEngine.getInstance().changeZoom(scale)
+            onZoomChangeListener?.onZoomChange(zoomScale, false)
+            return super.onScale(detector)
+        }
+
+        override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
+            minSpan = detector.currentSpan / CameraEngine.getInstance().getCurrentZoomScale()
+            return super.onScaleBegin(detector)
+        }
+
+        override fun onScaleEnd(detector: ScaleGestureDetector?) {
+            onZoomChangeListener?.onZoomChange(CameraEngine.getInstance().getCurrentZoomScale(), true)
+            super.onScaleEnd(detector)
+        }
     }
 }

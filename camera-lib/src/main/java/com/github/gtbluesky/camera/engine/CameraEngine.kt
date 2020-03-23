@@ -26,7 +26,7 @@ class CameraEngine private constructor() {
         for (cameraId in 0 until cameraNum) {
             val cameraInfo = Camera.CameraInfo()
             Camera.getCameraInfo(cameraId, cameraInfo)
-            when(cameraInfo.facing) {
+            when (cameraInfo.facing) {
                 CameraParam.FRONT_CAMERA_ID -> frontCameraInfo = cameraInfo
                 CameraParam.BACK_CAMERA_ID -> backCameraInfo = cameraInfo
             }
@@ -35,7 +35,7 @@ class CameraEngine private constructor() {
 
     companion object {
         private val TAG = CameraEngine::class.java.simpleName
-
+        private const val ZOOM_RATIO_MIN = 100f
         fun getInstance() = CameraEngineHolder.holder
     }
 
@@ -94,7 +94,10 @@ class CameraEngine private constructor() {
         resetCamera()
     }
 
-    fun setAutoFocus(point: Point = Point(cameraParam.viewWidth / 2, cameraParam.viewHeight / 2), areaSize: Int = 100) {
+    fun setAutoFocus(
+        point: Point = Point(cameraParam.viewWidth / 2, cameraParam.viewHeight / 2),
+        areaSize: Int = 100
+    ) {
         val cameraParams = getCameraParams()
         if (Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO !in cameraParams.supportedFocusModes) {
             Log.e(TAG, "FOCUS_MODE_AUTO isn't supported")
@@ -130,12 +133,8 @@ class CameraEngine private constructor() {
         }
     }
 
-    fun changeZoom(scale: Float) {
-
-    }
-
     fun switchCamera(context: Context, surfaceTexture: SurfaceTexture) {
-        cameraParam.cameraId = when(cameraParam.cameraId) {
+        cameraParam.cameraId = when (cameraParam.cameraId) {
             CameraParam.FRONT_CAMERA_ID -> CameraParam.BACK_CAMERA_ID
             else -> CameraParam.FRONT_CAMERA_ID
         }
@@ -177,17 +176,21 @@ class CameraEngine private constructor() {
                 && Camera.Parameters.FLASH_MODE_TORCH in supportedFlashModes)
     }
 
-//    fun changeZoom(scale: Float) {
-//        val cameraParams = getCameraParams()
-//        if (cameraParams.isZoomSupported) {
-//            cameraParams.zoom =
-//        } else {
-//            Log.e(TAG, "This device doesn't support zoom")
-//        }
-//    }
+    fun changeZoom(scale: Float): Float {
+        val cameraParams = getCameraParams()
+        var index = 0
+        if (cameraParams.isZoomSupported) {
+            index = getZoomRatioIndex(scale)
+            cameraParams.zoom = index
+            camera?.parameters = cameraParams
+        } else {
+            Log.e(TAG, "This device doesn't support zoom")
+        }
+        return cameraParams.zoomRatios[index] / ZOOM_RATIO_MIN
+    }
 
     private fun getCameraDisplayOrientation(context: Context): Int {
-        val degrees = when((context as Activity).windowManager.defaultDisplay.rotation) {
+        val degrees = when ((context as Activity).windowManager.defaultDisplay.rotation) {
             Surface.ROTATION_0 -> 0
             Surface.ROTATION_90 -> 90
             Surface.ROTATION_180 -> 180
@@ -205,7 +208,7 @@ class CameraEngine private constructor() {
     }
 
     private fun getCameraParams(): Camera.Parameters {
-        return when(cameraParam.cameraId) {
+        return when (cameraParam.cameraId) {
             CameraParam.FRONT_CAMERA_ID -> {
                 if (frontParams == null) {
                     frontParams = camera?.parameters
@@ -222,10 +225,41 @@ class CameraEngine private constructor() {
     }
 
     private fun getCameraInfo(): Camera.CameraInfo {
-        return when(cameraParam.cameraId) {
+        return when (cameraParam.cameraId) {
             CameraParam.FRONT_CAMERA_ID -> frontCameraInfo
             else -> backCameraInfo
         }
+    }
+
+    private fun getZoomRatioIndex(scale: Float): Int {
+        val zoomRatios: List<Int> = getCameraParams().zoomRatios
+        var index = 0
+        var i = 0
+        val size = zoomRatios.size
+        while (i < size) {
+            if (i == 0 && scale * ZOOM_RATIO_MIN < zoomRatios[i]) {
+                index = i
+                break
+            }
+            if (i == size - 1 && scale * ZOOM_RATIO_MIN > zoomRatios[i]) {
+                index = i
+                break
+            }
+            if ((scale * ZOOM_RATIO_MIN).toInt() == zoomRatios[i]) {
+                index = i
+                break
+            }
+            if (scale * ZOOM_RATIO_MIN > zoomRatios[i] && scale * ZOOM_RATIO_MIN < zoomRatios[i + 1]) {
+                index = i
+                break
+            }
+            i++
+        }
+        return index
+    }
+
+    fun getCurrentZoomScale(): Float {
+        return getCameraParams().zoomRatios[getCameraParams().zoom] / ZOOM_RATIO_MIN
     }
 
     private object CameraEngineHolder {
