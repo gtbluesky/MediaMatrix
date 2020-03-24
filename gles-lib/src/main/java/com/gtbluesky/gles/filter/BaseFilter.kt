@@ -22,7 +22,7 @@ abstract class BaseFilter {
     protected var viewWidth = 0
     protected var viewHeight = 0
     protected var program = GLES30.GL_NONE
-    // FBO宽高，一般和视图宽高一致
+    // FBO宽高，一般与相机预览宽高一致
     protected var frameWidth = 0
     protected var frameHeight = 0
     // FBO

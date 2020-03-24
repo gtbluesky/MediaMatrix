@@ -29,26 +29,26 @@ class RenderManager(context: Context) {
         filterMap[FilterType.NormalFilter] = NormalFilter()
 //        filterMap[FilterType.SplitScreenFilter] = SplitScreenFilter(context, 9)
 //        filterMap[FilterType.MirrorScreenFilter] = MirrorScreenFilter(context, isMirrorX = false)
-        filterMap[FilterType.MosaicFilter] = MosaicSquareFilter(context)
+//        filterMap[FilterType.MosaicFilter] = MosaicSquareFilter(context)
         filterMap[FilterType.WatermarkFilter] = WatermarkFilter().apply {
-            setResource(context, R.drawable.wm, 100, 100, 200, 200)
+            setResource(context, R.drawable.wm, 0, 0, 100, 200)
         }
-        filterMap[FilterType.StickerFilter] = StickerFilter().apply {
-            setResource(context, R.drawable.wm, 100, 300, 200, 200)
-        }
+//        filterMap[FilterType.StickerFilter] = StickerFilter().apply {
+//            setResource(context, R.drawable.wm, 100, 300, 200, 200)
+//        }
     }
 
     fun setViewSize(width: Int, height: Int) {
         filterMap.forEach {
             it.value.let { filter ->
                 filter.setViewSize(width, height)
-                filter.initFrameBuffer(width, height)
             }
         }
     }
 
     fun setTextureSize(width: Int, height: Int) {
         filterMap.forEach {
+            it.value.initFrameBuffer(width, height)
             it.value.setTextureSize(width, height)
         }
     }

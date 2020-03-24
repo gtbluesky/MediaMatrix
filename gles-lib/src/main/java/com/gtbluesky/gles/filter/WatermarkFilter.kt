@@ -8,10 +8,10 @@ import com.gtbluesky.gles.util.GLHelper
 
 open class WatermarkFilter : NormalFilter() {
     // 水印的位置和宽高
-    private var x: Int = 0
-    private var y: Int = 0
-    private var width: Int = 0
-    private var height: Int = 0
+    private var x = 0
+    private var y = 0
+    private var width = 0
+    private var height = 0
     private var textureId = GLES30.GL_NONE
 
     private val watermark: NormalFilter by lazy {
@@ -38,16 +38,21 @@ open class WatermarkFilter : NormalFilter() {
         setBlendFun()
         watermark.mvpMatrix.let {
             Matrix.setIdentityM(it, 0)
-            Matrix.scaleM(it, 0, 1f, -1f, 1f)
+            //将顶点坐标的原点移动到屏幕左上角
+            Matrix.translateM(it, 0, -1f, 1f, 0f)
+            //缩放+上下翻转
+            Matrix.scaleM(it, 0, width.toFloat() / viewWidth, -height.toFloat() / viewHeight, 1f)
+            //移动坐标使其左下角与屏幕左上角重合
+            Matrix.translateM(it, 0, 1f, 1f, 0f)
+            //根据x和y值移动坐标
+            Matrix.translateM(it, 0, 2f * x / width, 2f * y / height, 0f)
         }
-        watermark.setViewSize(width, height)
+        watermark.setViewSize(frameWidth, frameHeight)
         watermark.drawFrame(
             textureId,
             GLHelper.createFloatBuffer(FilterConstant.VERTEX_COORDS),
             GLHelper.createFloatBuffer(FilterConstant.TEXTURE_COORDS),
-            false,
-            x,
-            viewHeight - y - height
+            false
         )
         GLES30.glDisable(GLES30.GL_BLEND)
     }
