@@ -27,6 +27,9 @@ class RenderManager(context: Context) {
     private fun initFilter(context: Context) {
         filterMap[FilterType.OESInputFilter] = OESInputFilter()
         filterMap[FilterType.NormalFilter] = NormalFilter()
+//        filterMap[FilterType.SplitScreenFilter] = SplitScreenFilter(context, 9)
+//        filterMap[FilterType.MirrorScreenFilter] = MirrorScreenFilter(context, isMirrorX = false)
+        filterMap[FilterType.MosaicFilter] = MosaicSquareFilter(context)
         filterMap[FilterType.WatermarkFilter] = WatermarkFilter().apply {
             setResource(context, R.drawable.wm, 100, 100, 200, 200)
         }
@@ -54,6 +57,15 @@ class RenderManager(context: Context) {
         (filterMap[FilterType.OESInputFilter] as? OESInputFilter)?.let {
             it.transformMatrix = matrix
             outputTextureId = it.drawFrameBuffer(textureId, vertexBuffer, textureBuffer)
+        }
+        (filterMap[FilterType.MosaicFilter] as? MosaicSquareFilter)?.let {
+            outputTextureId = it.drawFrameBuffer(outputTextureId, vertexBuffer, textureBuffer)
+        }
+        (filterMap[FilterType.SplitScreenFilter] as? SplitScreenFilter)?.let {
+            outputTextureId = it.drawFrameBuffer(outputTextureId, vertexBuffer, textureBuffer)
+        }
+        (filterMap[FilterType.MirrorScreenFilter] as? MirrorScreenFilter)?.let {
+            outputTextureId = it.drawFrameBuffer(outputTextureId, vertexBuffer, textureBuffer)
         }
         (filterMap[FilterType.WatermarkFilter] as? WatermarkFilter)?.let {
             outputTextureId = it.drawFrameBuffer(outputTextureId, vertexBuffer, textureBuffer)

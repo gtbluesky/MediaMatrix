@@ -5,8 +5,6 @@ import com.gtbluesky.gles.util.GLHelper
 import java.nio.FloatBuffer
 
 abstract class BaseFilter {
-    protected var vertexShader = VERTEX_SHADER
-    protected var fragmentShader = FRAGMENT_SHADER
     // 纹理单元
     protected val textureUnit = 0
     protected var textureType = GLES30.GL_TEXTURE_2D
@@ -32,38 +30,8 @@ abstract class BaseFilter {
     protected var frameBufferTextureId = GLES30.GL_NONE
 
     companion object {
+        private val TAG = BaseFilter::class.java.simpleName
         const val GL_MATRIX_SIZE = 16
-        private const val VERTEX_SHADER = """
-            attribute vec4 aPosition;
-            attribute vec4 aTextureCoord;
-            varying vec2 vTextureCoord;
-            uniform mat4 uMVPMatrix;
-            void main() {
-                gl_Position = uMVPMatrix * aPosition;
-                vTextureCoord = aTextureCoord.xy;
-            }
-        """
-
-        private const val FRAGMENT_SHADER = """
-            precision mediump float;
-            uniform sampler2D uTextureUnit;
-            varying vec2 vTextureCoord;
-            void main() {
-                gl_FragColor = texture2D(uTextureUnit, vTextureCoord);
-            }
-        """
-    }
-
-    constructor() {
-        vertexShader = VERTEX_SHADER
-        fragmentShader = FRAGMENT_SHADER
-        initProgram()
-    }
-
-    constructor(vertexShader: String, fragmentShader: String) {
-        this.vertexShader = vertexShader
-        this.fragmentShader = fragmentShader
-        initProgram()
     }
 
     protected abstract fun initProgram()

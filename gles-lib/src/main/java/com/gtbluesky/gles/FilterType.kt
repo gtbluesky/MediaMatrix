@@ -4,5 +4,8 @@ enum class FilterType{
     OESInputFilter,
     WatermarkFilter,
     StickerFilter,
-    NormalFilter
+    NormalFilter,
+    SplitScreenFilter,
+    MirrorScreenFilter,
+    MosaicFilter
 }

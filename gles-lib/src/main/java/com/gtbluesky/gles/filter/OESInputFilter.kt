@@ -4,7 +4,11 @@ import android.opengl.GLES11Ext
 import android.opengl.GLES30
 import android.opengl.Matrix
 
-class OESInputFilter : NormalFilter(VERTEX_SHADER, FRAGMENT_SHADER) {
+class OESInputFilter :
+    NormalFilter(
+        vertexShader = VERTEX_SHADER,
+        fragmentShader = FRAGMENT_SHADER
+    ) {
 
     private var transformMatrixHandle = 0
     var transformMatrix: FloatArray? = null

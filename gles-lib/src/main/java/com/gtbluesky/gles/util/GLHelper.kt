@@ -7,7 +7,9 @@ import android.opengl.GLES11Ext
 import android.opengl.GLES30
 import android.opengl.GLUtils
 import android.opengl.Matrix
+import android.text.TextUtils
 import android.util.Log
+import java.io.*
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
@@ -390,6 +392,57 @@ object GLHelper {
                 rewind()
             }
 
+    }
+
+    @JvmStatic
+    fun getShaderFromFile(filePath: String): String? {
+        if (TextUtils.isEmpty(filePath)) {
+            return null
+        }
+        val file = File(filePath)
+        if (file.isDirectory) {
+            return null
+        }
+        var inputStream: InputStream? = null
+        try {
+            inputStream = FileInputStream(file)
+        } catch (e: FileNotFoundException) {
+            e.printStackTrace()
+        }
+        return getShaderFromStream(inputStream)
+    }
+
+    @JvmStatic
+    fun getShaderFromAssets(
+        context: Context,
+        path: String
+    ): String? {
+        var inputStream: InputStream? = null
+        try {
+            inputStream = context.resources.assets.open(path)
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+        return getShaderFromStream(inputStream)
+    }
+
+    private fun getShaderFromStream(inputStream: InputStream?): String? {
+        if (inputStream == null) {
+            return null
+        }
+        try {
+            val reader = BufferedReader(InputStreamReader(inputStream))
+            val builder = StringBuilder()
+            var line: String?
+            while (reader.readLine().also { line = it } != null) {
+                builder.append(line).append("\n")
+            }
+            reader.close()
+            return builder.toString()
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+        return null
     }
 
     /**

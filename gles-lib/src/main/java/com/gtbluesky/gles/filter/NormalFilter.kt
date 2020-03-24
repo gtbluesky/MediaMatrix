@@ -1,19 +1,48 @@
 package com.gtbluesky.gles.filter
 
+import android.content.Context
 import android.opengl.GLES30
 import android.opengl.Matrix
+import android.util.Log
 import com.gtbluesky.gles.constant.FilterConstant
 import com.gtbluesky.gles.util.GLHelper
 import java.nio.FloatBuffer
 
-open class NormalFilter : BaseFilter {
+open class NormalFilter(
+    protected val context: Context? = null,
+    protected val vertexShader: String = VERTEX_SHADER,
+    protected val fragmentShader: String = FRAGMENT_SHADER
+) : BaseFilter() {
 
-    constructor(): super()
+    companion object {
+        private val TAG = NormalFilter::class.java.simpleName
+        private const val VERTEX_SHADER = """
+            attribute vec4 aPosition;
+            attribute vec4 aTextureCoord;
+            varying vec2 vTextureCoord;
+            uniform mat4 uMVPMatrix;
+            void main() {
+                gl_Position = uMVPMatrix * aPosition;
+                vTextureCoord = aTextureCoord.xy;
+            }
+        """
 
-    constructor(vertexShader: String, fragmentShader: String)
-            : super(vertexShader, fragmentShader)
+        private const val FRAGMENT_SHADER = """
+            precision mediump float;
+            uniform sampler2D uTextureUnit;
+            varying vec2 vTextureCoord;
+            void main() {
+                gl_FragColor = texture2D(uTextureUnit, vTextureCoord);
+            }
+        """
+    }
+
+    init {
+        initProgram()
+    }
 
     override fun initProgram() {
+        Log.e(TAG, "fragmentShader=$fragmentShader")
         program = GLHelper.createProgram(
             vertexShader,
             fragmentShader
@@ -47,7 +76,7 @@ open class NormalFilter : BaseFilter {
     ) {
         GLES30.glViewport(x, y, viewWidth, viewHeight)
         if (clearColor) {
-            GLES30.glClearColor(0f ,0f, 0f, 1f)
+            GLES30.glClearColor(0f, 0f, 0f, 1f)
             GLES30.glClear(GLES30.GL_COLOR_BUFFER_BIT)
         }
 
@@ -69,7 +98,7 @@ open class NormalFilter : BaseFilter {
         ) {
             return GLES30.GL_NONE
         }
-        GLES30.glViewport(0 ,0, frameWidth, frameHeight)
+        GLES30.glViewport(0, 0, frameWidth, frameHeight)
         GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, frameBufferId)
 
         GLES30.glUseProgram(program)
@@ -90,7 +119,14 @@ open class NormalFilter : BaseFilter {
         GLES30.glVertexAttribPointer(positionHandle, 2, GLES30.GL_FLOAT, false, 0, vertexBuffer)
         GLES30.glEnableVertexAttribArray(positionHandle)
 
-        GLES30.glVertexAttribPointer(textureCoordHandle, 2, GLES30.GL_FLOAT, false, 0, textureBuffer)
+        GLES30.glVertexAttribPointer(
+            textureCoordHandle,
+            2,
+            GLES30.GL_FLOAT,
+            false,
+            0,
+            textureBuffer
+        )
         GLES30.glEnableVertexAttribArray(textureCoordHandle)
 
         GLES30.glActiveTexture(GLES30.GL_TEXTURE0 + textureUnit)
