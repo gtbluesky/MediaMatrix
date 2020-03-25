@@ -44,9 +44,7 @@ abstract class BaseFilter {
         textureId: Int,
         vertexBuffer: FloatBuffer,
         textureBuffer: FloatBuffer,
-        clearColor: Boolean = true,
-        x: Int = 0,
-        y: Int = 0
+        clearColor: Boolean = true
     )
 
     abstract fun drawFrameBuffer(
@@ -55,7 +53,7 @@ abstract class BaseFilter {
         textureBuffer: FloatBuffer
     ): Int
 
-    fun initFrameBuffer(width: Int, height: Int) {
+    open fun initFrameBuffer(width: Int, height: Int) {
         if (frameBufferId != GLES30.GL_NONE
             && (frameWidth != width || frameHeight != height)
         ) {

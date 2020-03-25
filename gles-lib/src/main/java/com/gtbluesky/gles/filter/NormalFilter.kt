@@ -70,11 +70,9 @@ open class NormalFilter(
         textureId: Int,
         vertexBuffer: FloatBuffer,
         textureBuffer: FloatBuffer,
-        clearColor: Boolean,
-        x: Int,
-        y: Int
+        clearColor: Boolean
     ) {
-        GLES30.glViewport(x, y, viewWidth, viewHeight)
+        GLES30.glViewport(0, 0, viewWidth, viewHeight)
         if (clearColor) {
             GLES30.glClearColor(0f, 0f, 0f, 1f)
             GLES30.glClear(GLES30.GL_COLOR_BUFFER_BIT)

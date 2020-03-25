@@ -60,4 +60,9 @@ open class WatermarkFilter : NormalFilter() {
     open fun setBlendFun() {
         GLES30.glBlendFunc(GLES30.GL_SRC_COLOR, GLES30.GL_DST_ALPHA)
     }
+
+    override fun destroy() {
+        super.destroy()
+        watermark.destroy()
+    }
 }

@@ -20,7 +20,7 @@ class OrientationController(context: Context) :
     }
 
     override fun onOrientationChanged(orientation: Int) {
-        Log.e(TAG, "orientation=$orientation")
+//        Log.e(TAG, "orientation=$orientation")
         val rotation = when {
             orientation < 45 || orientation >= (270 + 45) -> {
                 ROTATION_0
@@ -36,7 +36,7 @@ class OrientationController(context: Context) :
             }
             else -> ROTATION_0
         }
-        Log.e(TAG, "rotation=$rotation")
+//        Log.e(TAG, "rotation=$rotation")
         onRotationChangeListener?.onRotationChange(rotation)
     }
 }

@@ -8,7 +8,7 @@ class MosaicSquareFilter(context: Context) : NormalFilter(
     fragmentShader = GLHelper.getShaderFromAssets(
         context,
         "shader/mosaic_square.frag"
-    )!!
+    )?:""
 ) {
     //在屏幕上显示的像素值
     var mosaicSize = 50f

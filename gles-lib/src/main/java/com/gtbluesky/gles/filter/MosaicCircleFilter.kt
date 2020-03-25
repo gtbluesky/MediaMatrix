@@ -8,7 +8,7 @@ class MosaicCircleFilter(context: Context) : NormalFilter(
     fragmentShader = GLHelper.getShaderFromAssets(
         context,
         "shader/mosaic_circle.frag"
-    )!!
+    )?:""
 ) {
     //在屏幕上显示的像素值（直径）
     var mosaicSize = 50f

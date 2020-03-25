@@ -7,5 +7,6 @@ enum class FilterType{
     NormalFilter,
     SplitScreenFilter,
     MirrorScreenFilter,
-    MosaicFilter
+    MosaicFilter,
+    BlurFilter
 }
