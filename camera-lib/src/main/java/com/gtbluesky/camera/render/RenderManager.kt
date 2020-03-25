@@ -29,7 +29,7 @@ class RenderManager(context: Context) {
         filterMap[FilterType.NormalFilter] = NormalFilter()
 //        filterMap[FilterType.SplitScreenFilter] = SplitScreenFilter(context, 9)
 //        filterMap[FilterType.MirrorScreenFilter] = MirrorScreenFilter(context, isMirrorX = false)
-//        filterMap[FilterType.MosaicFilter] = MosaicSquareFilter(context)
+        filterMap[FilterType.MosaicFilter] = MosaicCircleFilter(context)
         filterMap[FilterType.WatermarkFilter] = WatermarkFilter().apply {
             setResource(context, R.drawable.wm, 0, 0, 100, 200)
         }
@@ -48,8 +48,10 @@ class RenderManager(context: Context) {
 
     fun setTextureSize(width: Int, height: Int) {
         filterMap.forEach {
-            it.value.initFrameBuffer(width, height)
-            it.value.setTextureSize(width, height)
+            it.value.let { filter ->
+                filter.initFrameBuffer(width, height)
+                filter.setTextureSize(width, height)
+            }
         }
     }
 
@@ -58,22 +60,22 @@ class RenderManager(context: Context) {
             it.transformMatrix = matrix
             outputTextureId = it.drawFrameBuffer(textureId, vertexBuffer, textureBuffer)
         }
-        (filterMap[FilterType.MosaicFilter] as? MosaicSquareFilter)?.let {
+        (filterMap[FilterType.MosaicFilter])?.let {
             outputTextureId = it.drawFrameBuffer(outputTextureId, vertexBuffer, textureBuffer)
         }
-        (filterMap[FilterType.SplitScreenFilter] as? SplitScreenFilter)?.let {
+        (filterMap[FilterType.SplitScreenFilter])?.let {
             outputTextureId = it.drawFrameBuffer(outputTextureId, vertexBuffer, textureBuffer)
         }
-        (filterMap[FilterType.MirrorScreenFilter] as? MirrorScreenFilter)?.let {
+        (filterMap[FilterType.MirrorScreenFilter])?.let {
             outputTextureId = it.drawFrameBuffer(outputTextureId, vertexBuffer, textureBuffer)
         }
-        (filterMap[FilterType.WatermarkFilter] as? WatermarkFilter)?.let {
+        (filterMap[FilterType.WatermarkFilter])?.let {
             outputTextureId = it.drawFrameBuffer(outputTextureId, vertexBuffer, textureBuffer)
         }
-        (filterMap[FilterType.StickerFilter] as? StickerFilter)?.let {
+        (filterMap[FilterType.StickerFilter])?.let {
             outputTextureId = it.drawFrameBuffer(outputTextureId, vertexBuffer, textureBuffer)
         }
-        (filterMap[FilterType.NormalFilter] as? NormalFilter)?.let {
+        (filterMap[FilterType.NormalFilter])?.let {
             it.drawFrame(outputTextureId, vertexBuffer, textureBuffer)
         }
         return outputTextureId

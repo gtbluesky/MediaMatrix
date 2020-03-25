@@ -4,13 +4,13 @@ import android.content.Context
 import android.opengl.GLES30
 import com.gtbluesky.gles.util.GLHelper
 
-class MosaicSquareFilter(context: Context) : NormalFilter(
+class MosaicCircleFilter(context: Context) : NormalFilter(
     fragmentShader = GLHelper.getShaderFromAssets(
         context,
-        "shader/mosaic_square.frag"
+        "shader/mosaic_circle.frag"
     )!!
 ) {
-    //在屏幕上显示的像素值
+    //在屏幕上显示的像素值（直径）
     var mosaicSize = 50f
     private var mosaicSizeHandle = GLES30.GL_NONE
     private var viewWidthHandle = GLES30.GL_NONE
