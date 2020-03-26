@@ -1,23 +1,18 @@
-//From GPUImageGaussianBlurFilter
 precision mediump float;
 uniform sampler2D uTextureUnit;
-varying highp vec2 vTextureCoord;
-const lowp int GAUSSIAN_SAMPLES = 9;
-varying highp vec2 blurCoordinates[GAUSSIAN_SAMPLES];
+varying vec2 vTextureCoord;
+const int GAUSSIAN_SAMPLES = 9;
+uniform vec2 uVecStep;
+uniform float uWeight[GAUSSIAN_SAMPLES];
 
 void main() {
-    lowp vec3 sum = vec3(0.0);
-    lowp vec4 fragColor = texture2D(uTextureUnit, vTextureCoord);
+    vec3 sum = vec3(0.0);
+    vec4 fragColor = texture2D(uTextureUnit, vTextureCoord);
 
-    sum += texture2D(uTextureUnit, blurCoordinates[0]).rgb * 0.05;
-    sum += texture2D(uTextureUnit, blurCoordinates[1]).rgb * 0.09;
-    sum += texture2D(uTextureUnit, blurCoordinates[2]).rgb * 0.12;
-    sum += texture2D(uTextureUnit, blurCoordinates[3]).rgb * 0.15;
-    sum += texture2D(uTextureUnit, blurCoordinates[4]).rgb * 0.18;
-    sum += texture2D(uTextureUnit, blurCoordinates[5]).rgb * 0.15;
-    sum += texture2D(uTextureUnit, blurCoordinates[6]).rgb * 0.12;
-    sum += texture2D(uTextureUnit, blurCoordinates[7]).rgb * 0.09;
-    sum += texture2D(uTextureUnit, blurCoordinates[8]).rgb * 0.05;
+    for (int i = 0; i < GAUSSIAN_SAMPLES; ++i) {
+        vec2 blurCoordinate = vTextureCoord + uVecStep * float(i - GAUSSIAN_SAMPLES / 2);
+        sum += texture2D(uTextureUnit, blurCoordinate).rgb * uWeight[i];
+    }
 
     gl_FragColor = vec4(sum, fragColor.a);
 }

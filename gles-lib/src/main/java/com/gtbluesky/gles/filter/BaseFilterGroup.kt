@@ -2,7 +2,7 @@ package com.gtbluesky.gles.filter
 
 import java.nio.FloatBuffer
 
-open class BaseFilterGroup : NormalFilter() {
+abstract class BaseFilterGroup : NormalFilter() {
     val filterList = arrayListOf<BaseFilter>()
 
     override fun initFrameBuffer(width: Int, height: Int) {
