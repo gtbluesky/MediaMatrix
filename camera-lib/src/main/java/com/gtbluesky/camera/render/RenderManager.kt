@@ -27,7 +27,7 @@ class RenderManager(context: Context) {
     private fun initFilter(context: Context) {
         filterMap[FilterType.OESInputFilter] = OESInputFilter()
         filterMap[FilterType.NormalFilter] = NormalFilter()
-        filterMap[FilterType.BlurFilter] = GaussianBlurFilterGroup(context)
+        filterMap[FilterType.BlurFilter] = GaussianBlurFilter(context, 1f)
 //        filterMap[FilterType.SplitScreenFilter] = SplitScreenFilter(context, 9)
 //        filterMap[FilterType.MirrorScreenFilter] = MirrorScreenFilter(context, isMirrorX = false)
 //        filterMap[FilterType.MosaicFilter] = MosaicCircleFilter(context)
@@ -37,6 +37,7 @@ class RenderManager(context: Context) {
 //        filterMap[FilterType.StickerFilter] = StickerFilter().apply {
 //            setResource(context, R.drawable.wm, 100, 300, 200, 200)
 //        }
+//        filterMap[FilterType.BeautyFilter] = BeautyFilter(context)
     }
 
     fun setViewSize(width: Int, height: Int) {
@@ -60,6 +61,9 @@ class RenderManager(context: Context) {
         (filterMap[FilterType.OESInputFilter] as? OESInputFilter)?.let {
             it.transformMatrix = matrix
             outputTextureId = it.drawFrameBuffer(textureId, vertexBuffer, textureBuffer)
+        }
+        (filterMap[FilterType.BeautyFilter])?.let {
+            outputTextureId = it.drawFrameBuffer(outputTextureId, vertexBuffer, textureBuffer)
         }
         (filterMap[FilterType.BlurFilter])?.let {
             outputTextureId = it.drawFrameBuffer(outputTextureId, vertexBuffer, textureBuffer)

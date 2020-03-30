@@ -8,5 +8,6 @@ enum class FilterType{
     SplitScreenFilter,
     MirrorScreenFilter,
     MosaicFilter,
-    BlurFilter
+    BlurFilter,
+    BeautyFilter
 }

@@ -57,13 +57,13 @@ open class NormalFilter(
     }
 
     override fun setViewSize(width: Int, height: Int) {
-        viewWidth = width
-        viewHeight = height
+        viewWidth = (width * scale).toInt()
+        viewHeight = (height * scale).toInt()
     }
 
     override fun setTextureSize(width: Int, height: Int) {
-        textureWidth = width
-        textureHeight = height
+        textureWidth = (width * scale).toInt()
+        textureHeight = (height * scale).toInt()
     }
 
     override fun drawFrame(

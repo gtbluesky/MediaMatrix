@@ -29,6 +29,8 @@ abstract class BaseFilter {
     protected var frameBufferId = GLES30.GL_NONE
     protected var frameBufferTextureId = GLES30.GL_NONE
 
+    var scale = 1f
+
     companion object {
         private val TAG = BaseFilter::class.java.simpleName
         const val GL_MATRIX_SIZE = 16
@@ -59,11 +61,11 @@ abstract class BaseFilter {
         ) {
             destroyFrameBuffer()
         }
-        frameWidth = width
-        frameHeight = height
+        frameWidth = (width * scale).toInt()
+        frameHeight = (height * scale).toInt()
         val frameBuffers = IntArray(1)
         val frameBufferTextures = IntArray(1)
-        GLHelper.createFrameBuffer(frameBuffers, frameBufferTextures, width, height)
+        GLHelper.createFrameBuffer(frameBuffers, frameBufferTextures, frameWidth, frameHeight)
         frameBufferId = frameBuffers[0]
         frameBufferTextureId = frameBufferTextures[0]
     }
@@ -74,7 +76,7 @@ abstract class BaseFilter {
             frameBufferTextureId = GLES30.GL_NONE
         }
         if (frameBufferId != GLES30.GL_NONE) {
-            GLES30.glDeleteFramebuffers(0, intArrayOf(frameBufferId), 0)
+            GLES30.glDeleteFramebuffers(1, intArrayOf(frameBufferId), 0)
             frameBufferId = GLES30.GL_NONE
         }
         frameWidth = 0
