@@ -126,11 +126,11 @@ class CameraPreviewActivity :
             }
             true
         }
-//        CameraParam.getInstance().onCameraFocusListener = object : OnCameraFocusListener {
-//            override fun onCameraFocus(success: Boolean) {
+        CameraParam.getInstance().onCameraFocusListener = object : OnCameraFocusListener {
+            override fun onCameraFocus(success: Boolean) {
 //                showToast("$success")
-//            }
-//        }
+            }
+        }
     }
 
     override fun onClick(v: View?) {

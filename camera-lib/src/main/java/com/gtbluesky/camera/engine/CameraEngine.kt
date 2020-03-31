@@ -98,12 +98,12 @@ class CameraEngine private constructor() {
         areaSize: Int = 100
     ) {
         val cameraParams = getCameraParams()
-        if (Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO !in cameraParams.supportedFocusModes) {
+        if (Camera.Parameters.FOCUS_MODE_AUTO !in cameraParams.supportedFocusModes) {
             Log.e(TAG, "FOCUS_MODE_AUTO isn't supported")
             camera?.parameters = cameraParams
             return
         }
-        Camera.Parameters.FOCUS_MODE_AUTO
+        cameraParams.focusMode = Camera.Parameters.FOCUS_MODE_AUTO
         val supportCustomFocus = cameraParams.maxNumFocusAreas > 0
         val supportMetering = cameraParams.maxNumMeteringAreas > 0
         val areaHalf = areaSize / 2
