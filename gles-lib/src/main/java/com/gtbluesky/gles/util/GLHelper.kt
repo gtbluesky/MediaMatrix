@@ -205,14 +205,19 @@ object GLHelper {
             GLES30.GL_TEXTURE_WRAP_T,
             GLES30.GL_CLAMP_TO_EDGE
         )
-        GLES30.glBindTexture(textureType, 0)
+        GLES30.glBindTexture(textureType, GLES30.GL_NONE)
         return textureId
     }
 
     @JvmStatic
-    fun createTexture(textureType: Int, context: Context, resId: Int): Int {
+    fun createTexture(
+        textureType: Int,
+        context: Context,
+        resId: Int,
+        textureUnit: Int = 0
+    ): Int {
         val textureId = createTexture(textureType)
-        GLES30.glActiveTexture(GLES30.GL_TEXTURE0)
+        GLES30.glActiveTexture(GLES30.GL_TEXTURE0 + textureUnit)
         GLES30.glBindTexture(textureType, textureId)
         val bitmap = BitmapFactory.decodeResource(context.resources, resId)
         GLUtils.texImage2D(textureType, 0, bitmap, 0)
@@ -419,7 +424,7 @@ object GLHelper {
     ): String? {
         var inputStream: InputStream? = null
         try {
-            inputStream = context.resources.assets.open(path)
+            inputStream = context.assets.open(path)
         } catch (e: IOException) {
             e.printStackTrace()
         }

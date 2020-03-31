@@ -38,9 +38,8 @@ class RenderManager(context: Context) {
 //            setResource(context, R.drawable.wm, 100, 300, 200, 200)
 //        }
 //        filterMap[FilterType.BeautyFilter] = BeautyFilter(context)
-        filterMap[FilterType.ToneCurveFilter] = ToneCurveFilter(context).apply {
-            setFromCurveFileInputStream(context.resources.openRawResource(R.raw.tone_cuver_sample))
-        }
+        filterMap[FilterType.ToneCurveFilter] = ToneCurveFilter(context, rawId = R.raw.tone_cuver_sample)
+//        filterMap[FilterType.LookupTableFilter] = LookupTableFilter(context)
     }
 
     fun setViewSize(width: Int, height: Int) {

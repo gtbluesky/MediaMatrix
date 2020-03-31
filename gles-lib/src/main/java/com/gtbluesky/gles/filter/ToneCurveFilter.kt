@@ -12,7 +12,11 @@ import java.nio.ByteBuffer
 import java.util.*
 import kotlin.math.*
 
-class ToneCurveFilter(context: Context) : NormalFilter(
+class ToneCurveFilter(
+    context: Context,
+    assetPath: String = "",
+    rawId: Int = 0
+) : NormalFilter(
     fragmentShader = GLHelper.getShaderFromAssets(
         context,
         "shader/tone_curve.frag"
@@ -27,47 +31,34 @@ class ToneCurveFilter(context: Context) : NormalFilter(
     override fun initProgram() {
         super.initProgram()
         toneCurveTextureUnitHandle = GLES30.glGetUniformLocation(program, "uToneCurveTextureUnit")
-        toneCurveTextureId = GLHelper.createTexture(GLES30.GL_TEXTURE_2D, toneCurveTextureUnit)
     }
 
-    override fun preDraw() {
-        GLES30.glActiveTexture(GLES30.GL_TEXTURE0 + toneCurveTextureUnit)
-        GLES30.glBindTexture(textureType, toneCurveTextureId)
-        GLES30.glUniform1i(toneCurveTextureUnitHandle, toneCurveTextureUnit)
-        GLES20.glTexImage2D(
-            GLES20.GL_TEXTURE_2D,
-            0,
-            GLES20.GL_RGBA,
-            256,
-            1,
-            0,
-            GLES20.GL_RGBA,
-            GLES20.GL_UNSIGNED_BYTE,
-            toneCurveBuffer
-        )
-    }
-
-    fun setFromCurveFileInputStream(input: InputStream) {
+    init {
         try {
-            val version = readShort(input).toInt()
-            val totalCurves = readShort(input).toInt()
+            val inputStream = if (rawId != 0) {
+                context.resources.openRawResource(rawId)
+            } else {
+                context.assets.open(assetPath)
+            }
+            val version = readShort(inputStream).toInt()
+            val totalCurves = readShort(inputStream).toInt()
             val curves = ArrayList<Array<PointF>>(totalCurves)
             val pointRate = 1.0f / 255
             for (i in 0 until totalCurves) {
                 // 2 bytes, Count of points in the curve (short integer from 2...19)
-                val pointCount = readShort(input)
+                val pointCount = readShort(inputStream)
                 val points = Array(pointCount.toInt()) {
                     // point count * 4
                     // Curve points. Each curve point is a pair of short integers where
                     // the first number is the output value (vertical coordinate on the
                     // Curves dialog graph) and the second is the input value. All coordinates have range 0 to 255.
-                    val y = readShort(input)
-                    val x = readShort(input)
+                    val y = readShort(inputStream)
+                    val x = readShort(inputStream)
                     PointF(x * pointRate, y * pointRate)
                 }
                 curves.add(points)
             }
-            input.close()
+            inputStream.close()
             val rgbCompositeCurve = createSplineCurve(curves[0])
             val redCurve = createSplineCurve(curves[1])
             val greenCurve = createSplineCurve(curves[2])
@@ -89,10 +80,32 @@ class ToneCurveFilter(context: Context) : NormalFilter(
                     toneCurveByteArray[currentCurveIndex * 4 + 3] = 0xff.toByte()
                 }
                 toneCurveBuffer = ByteBuffer.wrap(toneCurveByteArray)
+                toneCurveTextureId =
+                    GLHelper.createTexture(textureType, toneCurveTextureUnit)
+                GLES30.glActiveTexture(GLES30.GL_TEXTURE0 + toneCurveTextureUnit)
+                GLES30.glBindTexture(textureType, toneCurveTextureId)
+                GLES20.glTexImage2D(
+                    textureType,
+                    0,
+                    GLES20.GL_RGBA,
+                    256,
+                    1,
+                    0,
+                    GLES20.GL_RGBA,
+                    GLES20.GL_UNSIGNED_BYTE,
+                    toneCurveBuffer
+                )
+                GLES30.glBindTexture(textureType, GLES30.GL_NONE)
             }
         } catch (e: IOException) {
             e.printStackTrace()
         }
+    }
+
+    override fun preDraw() {
+        GLES30.glActiveTexture(GLES30.GL_TEXTURE0 + toneCurveTextureUnit)
+        GLES30.glBindTexture(textureType, toneCurveTextureId)
+        GLES30.glUniform1i(toneCurveTextureUnitHandle, toneCurveTextureUnit)
     }
 
     @Throws(IOException::class)
