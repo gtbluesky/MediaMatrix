@@ -9,5 +9,7 @@ enum class FilterType{
     MirrorScreenFilter,
     MosaicFilter,
     BlurFilter,
-    BeautyFilter
+    BeautyFilter,
+    ToneCurveFilter,
+    LookupTableFilter
 }

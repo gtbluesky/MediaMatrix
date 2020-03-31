@@ -179,11 +179,11 @@ object GLHelper {
     }
 
     @JvmStatic
-    fun createTexture(textureType: Int): Int {
+    fun createTexture(textureType: Int, textureUnit: Int = 0): Int {
         val textures = IntArray(1)
         GLES30.glGenTextures(1, textures, 0)
         val textureId = textures[0]
-        GLES30.glActiveTexture(GLES30.GL_TEXTURE0)
+        GLES30.glActiveTexture(GLES30.GL_TEXTURE0 + textureUnit)
         GLES30.glBindTexture(textureType, textureId)
         GLES30.glTexParameteri(
             textureType,

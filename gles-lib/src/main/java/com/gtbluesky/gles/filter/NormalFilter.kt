@@ -42,7 +42,7 @@ open class NormalFilter(
     }
 
     override fun initProgram() {
-        Log.e(TAG, "fragmentShader=$fragmentShader")
+        Log.e(TAG, "fragmentShader=\n$fragmentShader")
         program = GLHelper.createProgram(
             vertexShader,
             fragmentShader

@@ -27,7 +27,7 @@ class RenderManager(context: Context) {
     private fun initFilter(context: Context) {
         filterMap[FilterType.OESInputFilter] = OESInputFilter()
         filterMap[FilterType.NormalFilter] = NormalFilter()
-        filterMap[FilterType.BlurFilter] = GaussianBlurFilter(context, 1f)
+//        filterMap[FilterType.BlurFilter] = GaussianBlurFilter(context, 1f)
 //        filterMap[FilterType.SplitScreenFilter] = SplitScreenFilter(context, 9)
 //        filterMap[FilterType.MirrorScreenFilter] = MirrorScreenFilter(context, isMirrorX = false)
 //        filterMap[FilterType.MosaicFilter] = MosaicCircleFilter(context)
@@ -38,6 +38,9 @@ class RenderManager(context: Context) {
 //            setResource(context, R.drawable.wm, 100, 300, 200, 200)
 //        }
 //        filterMap[FilterType.BeautyFilter] = BeautyFilter(context)
+        filterMap[FilterType.ToneCurveFilter] = ToneCurveFilter(context).apply {
+            setFromCurveFileInputStream(context.resources.openRawResource(R.raw.tone_cuver_sample))
+        }
     }
 
     fun setViewSize(width: Int, height: Int) {
@@ -66,6 +69,12 @@ class RenderManager(context: Context) {
             outputTextureId = it.drawFrameBuffer(outputTextureId, vertexBuffer, textureBuffer)
         }
         (filterMap[FilterType.BlurFilter])?.let {
+            outputTextureId = it.drawFrameBuffer(outputTextureId, vertexBuffer, textureBuffer)
+        }
+        (filterMap[FilterType.ToneCurveFilter])?.let {
+            outputTextureId = it.drawFrameBuffer(outputTextureId, vertexBuffer, textureBuffer)
+        }
+        (filterMap[FilterType.LookupTableFilter])?.let {
             outputTextureId = it.drawFrameBuffer(outputTextureId, vertexBuffer, textureBuffer)
         }
         (filterMap[FilterType.MosaicFilter])?.let {
