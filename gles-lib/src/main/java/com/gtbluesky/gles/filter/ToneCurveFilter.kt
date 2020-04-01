@@ -108,6 +108,14 @@ class ToneCurveFilter(
         GLES30.glUniform1i(toneCurveTextureUnitHandle, toneCurveTextureUnit)
     }
 
+    override fun destroy() {
+        super.destroy()
+        if (toneCurveTextureId != GLES30.GL_NONE) {
+            GLES30.glDeleteTextures(1, intArrayOf(toneCurveTextureId), 0)
+            toneCurveTextureId = GLES30.GL_NONE
+        }
+    }
+
     @Throws(IOException::class)
     private fun readShort(input: InputStream): Short {
         return (input.read() shl 8 or input.read()).toShort()

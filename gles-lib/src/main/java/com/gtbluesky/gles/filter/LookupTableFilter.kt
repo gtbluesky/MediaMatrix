@@ -33,4 +33,12 @@ class LookupTableFilter(context: Context) : NormalFilter(
         GLES30.glUniform1i(lutTextureUnitHandle, lutTextureUnit)
         GLES30.glUniform1f(intensityHandle, intensity)
     }
+
+    override fun destroy() {
+        super.destroy()
+        if (lutTextureId != GLES30.GL_NONE) {
+            GLES30.glDeleteTextures(1, intArrayOf(lutTextureId), 0)
+            lutTextureId = GLES30.GL_NONE
+        }
+    }
 }

@@ -13,5 +13,6 @@ enum class FilterType{
     ToneCurveFilter,
     LookupTableFilter,
     DrosteEffectFilter,
-    ChangeableFilter
+    ChangeableFilter,
+    FrameFilter
 }
