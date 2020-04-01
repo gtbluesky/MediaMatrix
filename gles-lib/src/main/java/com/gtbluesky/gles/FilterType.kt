@@ -12,5 +12,6 @@ enum class FilterType{
     BeautyFilter,
     ToneCurveFilter,
     LookupTableFilter,
-    DrosteEffectFilter
+    DrosteEffectFilter,
+    ChangeableFilter
 }

@@ -40,7 +40,8 @@ class RenderManager(context: Context) {
 //        filterMap[FilterType.BeautyFilter] = BeautyFilter(context)
 //        filterMap[FilterType.ToneCurveFilter] = ToneCurveFilter(context, rawId = R.raw.tone_cuver_sample)
 //        filterMap[FilterType.LookupTableFilter] = LookupTableFilter(context)
-        filterMap[FilterType.DrosteEffectFilter] = DrosteEffectFilter(context)
+//        filterMap[FilterType.DrosteEffectFilter] = DrosteEffectFilter(context)
+        filterMap[FilterType.ChangeableFilter] = SoulEffectFilter(context)
     }
 
     fun setViewSize(width: Int, height: Int) {
@@ -78,6 +79,9 @@ class RenderManager(context: Context) {
             outputTextureId = it.drawFrameBuffer(outputTextureId, vertexBuffer, textureBuffer)
         }
         (filterMap[FilterType.MosaicFilter])?.let {
+            outputTextureId = it.drawFrameBuffer(outputTextureId, vertexBuffer, textureBuffer)
+        }
+        (filterMap[FilterType.ChangeableFilter])?.let {
             outputTextureId = it.drawFrameBuffer(outputTextureId, vertexBuffer, textureBuffer)
         }
         (filterMap[FilterType.DrosteEffectFilter])?.let {
