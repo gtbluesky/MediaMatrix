@@ -16,9 +16,9 @@ void main() {
     // 偏移值
     vec2 offset = (vec2(0.5, 0.5) / float(repeat)) * minOffset;
     // 当前实际的偏移值
-    vec2 currenOffset = 1.0 / (vec2(1.0, 1.0) - offset * 2.0);
-    // 计算出当前的实际UV坐标
-    vec2 currentUV = (uv - offset) * currenOffset;
+    vec2 currentOffset = 1.0 / (vec2(1.0, 1.0) - offset * 2.0);
+    // 计算出当前的实际坐标
+    uv = (uv - offset) * currentOffset;
 
-    gl_FragColor = texture2D(uTextureUnit, fract(currentUV));
+    gl_FragColor = texture2D(uTextureUnit, fract(uv));
 }

@@ -4,13 +4,15 @@ import android.content.Context
 import android.opengl.GLES30
 import com.gtbluesky.gles.util.GLHelper
 
-class DrosteEffectFilter(context: Context) : NormalFilter(
+class DrosteEffectFilter(
+    context: Context,
+    private val repeat: Int = 3
+) : NormalFilter(
     fragmentShader = GLHelper.getShaderFromAssets(
         context,
         "shader/droste_effect.frag"
     ) ?: ""
 ) {
-    var repeat = 3
     private var repeatHandle = GLES30.GL_NONE
 
     override fun initProgram() {

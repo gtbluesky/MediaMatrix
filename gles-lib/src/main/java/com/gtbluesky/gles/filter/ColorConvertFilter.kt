@@ -21,10 +21,10 @@ class ColorConvertFilter(context: Context) : NormalFilter(
 
     override fun initProgram() {
         super.initProgram()
-        hueHandle = GLES30.glGetUniformLocation(program, "u_hue")
-        saturationHandle = GLES30.glGetUniformLocation(program, "u_saturation")
-        valueHandle = GLES30.glGetUniformLocation(program, "u_value")
-        contrastHandle = GLES30.glGetUniformLocation(program, "u_contrast")
+        hueHandle = GLES30.glGetUniformLocation(program, "uHue")
+        saturationHandle = GLES30.glGetUniformLocation(program, "uSaturation")
+        valueHandle = GLES30.glGetUniformLocation(program, "uValue")
+        contrastHandle = GLES30.glGetUniformLocation(program, "uContrast")
     }
 
     override fun preDraw() {
