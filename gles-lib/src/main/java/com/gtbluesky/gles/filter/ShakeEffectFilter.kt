@@ -17,8 +17,8 @@ class ShakeEffectFilter(context: Context) :
     }
 
     override fun preDraw() {
-        val interval = (System.currentTimeMillis() - baseTimestamp) / 33f
-        scale = 1f + 0.3f * getInterpolation(interval)
+        val interval = (System.currentTimeMillis() - baseTimestamp) / 300f
+        val scale = 1f + 0.3f * getInterpolation(interval)
         GLES30.glUniform1f(scaleHandle, scale)
     }
 

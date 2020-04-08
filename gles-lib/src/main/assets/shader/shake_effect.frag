@@ -7,10 +7,8 @@ uniform float scale;
 
 void main() {
     vec2 uv = vTextureCoord.xy;
-    vec2 scaleCoordinate = vec2(
-        (scale - 1.0) * 0.5 + uv.x / scale,
-        (scale - 1.0) * 0.5 + uv.y / scale
-    );
+    vec2 center = vec2(0.5, 0.5);
+    vec2 scaleCoordinate = (uv - center) / scale + center;
     vec4 smoothColor = texture2D(uTextureUnit, scaleCoordinate);
 
     // 计算红色通道偏移值

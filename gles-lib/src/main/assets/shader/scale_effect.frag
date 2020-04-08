@@ -8,9 +8,6 @@ uniform float scale;
 void main() {
     vec2 uv = vTextureCoord.xy;
     vec2 center = vec2(0.5, 0.5);
-    uv -= center;
-    uv = uv / scale;
-    uv += center;
-
+    uv = (uv - center) / scale + center;
     gl_FragColor = texture2D(uTextureUnit, uv);
 }

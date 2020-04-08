@@ -10,9 +10,7 @@ void main() {
     // 输入纹理
     vec4 sourceColor = texture2D(uTextureUnit, fract(uv));
     vec2 center = vec2(0.5, 0.5);
-    uv -= center;
-    uv = uv / scale;
-    uv += center;
+    uv = (uv - center) / scale + center;
 
     // 缩放纹理
     vec4 scaleColor = texture2D(uTextureUnit, fract(uv));

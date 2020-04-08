@@ -4,10 +4,10 @@ import android.content.Context
 import android.opengl.GLES30
 
 
-class SoulEffectFilter(context: Context) :
+class SoulOutEffectFilter(context: Context) :
     ChangeableEffectFilter(
         context,
-        "shader/soul_effect.frag"
+        "shader/soul_out_effect.frag"
     ) {
     private var scaleHandle = GLES30.GL_NONE
 
@@ -18,7 +18,7 @@ class SoulEffectFilter(context: Context) :
 
     override fun preDraw() {
         val interval = (System.currentTimeMillis() - baseTimestamp) / 33f
-        scale = 1f + 0.3f * getInterpolation(interval)
+        val scale = 1f + 0.3f * getInterpolation(interval)
         GLES30.glUniform1f(scaleHandle, scale)
     }
 
