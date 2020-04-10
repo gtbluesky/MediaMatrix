@@ -239,7 +239,7 @@ class HwVideoHandler(
     private fun drawFrame(textureId: Int, timeStamp: Long) {
         windowSurface?.makeCurrent()
         recordFilter.drawFrame(textureId, vertexBuffer, textureBuffer)
-        (System.nanoTime() - baseTimeStamo).let {
+        ((System.nanoTime() - baseTimeStamo) / codecParam.speed).toLong().let {
             Log.d(TAG, "presentationTime(Us)：$it, presentationTime(s):  ${it / 1000000f}")
             windowSurface?.setPresentationTime(it)
         }

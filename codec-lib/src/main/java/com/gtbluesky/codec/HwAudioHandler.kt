@@ -19,6 +19,7 @@ class HwAudioHandler(
     private var audioRecord: AudioRecord? = null
     private var presentationTimeUs = 0L
     private var totalReadedBytes = 0
+    private var audioProcessor: AudioProcessor? = null
 
     companion object {
         private val TAG = HwAudioHandler::class.java.simpleName
@@ -40,6 +41,12 @@ class HwAudioHandler(
             AudioFormat.ENCODING_PCM_16BIT,
             minBufferSize
         )
+        audioProcessor = SonicAudioProcessor().also {
+            it.setSpeed(codecParam.speed)
+            it.configure(codecParam.sampleRate, codecParam.channelCount, AudioFormat.ENCODING_PCM_16BIT)
+            it.setOutputSampleRateHz(codecParam.sampleRate)
+            it.flush()
+        }
     }
 
     override fun handleMessage(msg: Message) {
