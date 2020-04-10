@@ -238,6 +238,10 @@ class MatrixCameraFragment : Fragment() {
         )
     }
 
+    fun setBeautyFilter(enable: Boolean) {
+        previewRenderer?.setBeautyFilter(enable)
+    }
+
     private inner class ZoomScaleGestureDetector :
         ScaleGestureDetector.SimpleOnScaleGestureListener() {
         override fun onScale(detector: ScaleGestureDetector): Boolean {

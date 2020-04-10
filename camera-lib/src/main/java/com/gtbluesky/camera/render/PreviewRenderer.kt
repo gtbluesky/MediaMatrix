@@ -145,4 +145,15 @@ class PreviewRenderer(private val context: Context) {
             )
         }
     }
+
+    fun setBeautyFilter(enable: Boolean) {
+        renderHandler.apply {
+            sendMessage(
+                obtainMessage(
+                    RenderHandler.MSG_USE_BEAUTY,
+                    enable
+                )
+            )
+        }
+    }
 }

@@ -68,6 +68,7 @@ class RenderHandler(private val context: Context, looper: Looper) :
         const val MSG_TOGGLE_TORCH = 0x10
         // 调整分辨率和画幅
         const val MSG_CHANGE_RESOLUTION = 0x11
+        const val MSG_USE_BEAUTY = 0x12
     }
 
     override fun handleMessage(msg: Message) {
@@ -121,7 +122,16 @@ class RenderHandler(private val context: Context, looper: Looper) :
                     enumValues<AspectRatioType>()[msg.arg2]
                 )
             }
+            MSG_USE_BEAUTY -> {
+                (msg.obj as? Boolean)?.let {
+                    handleBeauty(it)
+                }
+            }
         }
+    }
+
+    private fun handleBeauty(enable: Boolean) {
+        renderManager.setBeauty(enable, context)
     }
 
     private fun handleSurfaceCreated(surface: Surface) {

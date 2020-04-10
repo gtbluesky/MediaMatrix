@@ -22,14 +22,14 @@ import com.gtbluesky.mediamatrix.R
 import com.yanzhenjie.permission.AndPermission
 import com.yanzhenjie.permission.Permission
 
-class CameraPreviewActivity :
-    AppCompatActivity(), View.OnClickListener {
+class CameraPreviewActivity : AppCompatActivity() {
 
     private lateinit var chronometer: Chronometer
     private lateinit var switchIv: ImageView
     private lateinit var flashIv: ImageView
     private lateinit var recordIv: ImageView
     private lateinit var zoomTv: TextView
+    private lateinit var beautyIv: ImageView
     private lateinit var matrixCameraFragment: MatrixCameraFragment
 
     companion object {
@@ -59,7 +59,7 @@ class CameraPreviewActivity :
                     matrixCameraFragment = it
                     it.onZoomChangeListener = object : OnZoomChangeListener {
                         override fun onZoomChange(scale: Float, completed: Boolean) {
-                            zoomTv.text = "${scale}X"
+                            zoomTv.text = "${String.format("%.1f", scale)}X"
                             zoomTv.visibility = if (completed) {
                                 View.GONE
                             } else {
@@ -114,35 +114,42 @@ class CameraPreviewActivity :
         recordIv = findViewById(R.id.record_iv)
         recordIv.drawable.level = 1
         zoomTv = findViewById(R.id.tv_zoom)
+        beautyIv = findViewById(R.id.beauty_tv)
+        beautyIv.alpha = 0.5f
     }
 
     private fun setListener() {
-        switchIv.setOnClickListener(this)
-        flashIv.setOnClickListener(this)
-        recordIv.setOnClickListener(this)
+        switchIv.setOnClickListener{
+            matrixCameraFragment.switchCamera()
+        }
+        flashIv.setOnClickListener{
+            matrixCameraFragment.toggleTorch()
+        }
+        recordIv.setOnClickListener{
+            if (recordIv.drawable.level == 1) {
+                takePicture()
+            } else {
+                stopRecord()
+            }
+        }
         recordIv.setOnLongClickListener {
             if (recordIv.drawable.level == 1) {
                 startRecord()
             }
             true
         }
-        CameraParam.getInstance().onCameraFocusListener = object : OnCameraFocusListener {
-            override fun onCameraFocus(success: Boolean) {
+//        CameraParam.getInstance().onCameraFocusListener = object : OnCameraFocusListener {
+//            override fun onCameraFocus(success: Boolean) {
 //                showToast("$success")
-            }
-        }
-    }
-
-    override fun onClick(v: View?) {
-        when (v?.id) {
-            R.id.switch_iv -> matrixCameraFragment.switchCamera()
-            R.id.flash_iv -> matrixCameraFragment.toggleTorch()
-            R.id.record_iv -> {
-                if (recordIv.drawable.level == 1) {
-                    takePicture()
-                } else {
-                    stopRecord()
-                }
+//            }
+//        }
+        beautyIv.setOnClickListener{
+            if (it.alpha != 1f) {
+                matrixCameraFragment.setBeautyFilter(true)
+                it.alpha = 1f
+            } else {
+                matrixCameraFragment.setBeautyFilter(false)
+                it.alpha = 0.5f
             }
         }
     }

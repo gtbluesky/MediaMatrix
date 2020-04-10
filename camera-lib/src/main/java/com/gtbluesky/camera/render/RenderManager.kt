@@ -2,7 +2,7 @@ package com.gtbluesky.camera.render
 
 import android.content.Context
 import android.opengl.GLES30
-import com.gtbluesky.camera.R
+import com.gtbluesky.camera.CameraParam
 import com.gtbluesky.gles.FilterType
 import com.gtbluesky.gles.constant.FilterConstant
 import com.gtbluesky.gles.filter.*
@@ -31,9 +31,9 @@ class RenderManager(context: Context) {
 //        filterMap[FilterType.SplitScreenFilter] = SplitScreenFilter(context, 9)
 //        filterMap[FilterType.MirrorScreenFilter] = MirrorScreenFilter(context, isMirrorX = false)
 //        filterMap[FilterType.MosaicFilter] = MosaicCircleFilter(context)
-        filterMap[FilterType.WatermarkFilter] = WatermarkFilter().apply {
-            setResource(context, R.drawable.wm, 0, 0, 100, 200)
-        }
+//        filterMap[FilterType.WatermarkFilter] = WatermarkFilter().apply {
+//            setResource(context, R.drawable.wm, 0, 0, 100, 200)
+//        }
 //        filterMap[FilterType.StickerFilter] = StickerFilter().apply {
 //            setResource(context, R.drawable.wm, 100, 300, 200, 200)
 //        }
@@ -41,7 +41,28 @@ class RenderManager(context: Context) {
 //        filterMap[FilterType.ToneCurveFilter] = ToneCurveFilter(context, rawId = R.raw.tone_cuver_sample)
 //        filterMap[FilterType.LookupTableFilter] = LookupTableFilter(context)
 //        filterMap[FilterType.DrosteEffectFilter] = DrosteEffectFilter(context)
-        filterMap[FilterType.ChangeableFilter] = SoulEffectFilter(context)
+    }
+
+    fun setBeauty(enable: Boolean, context: Context) {
+        if (enable && filterMap[FilterType.BeautyFilter] == null) {
+            BeautyFilter(context).let {
+                it.setViewSize(
+                    CameraParam.getInstance().viewWidth,
+                    CameraParam.getInstance().viewHeight
+                )
+                it.initFrameBuffer(
+                    CameraParam.getInstance().previewWidth,
+                    CameraParam.getInstance().previewHeight
+                )
+                it.setTextureSize(
+                    CameraParam.getInstance().previewWidth,
+                    CameraParam.getInstance().previewHeight
+                )
+                filterMap[FilterType.BeautyFilter] = it
+            }
+        } else {
+            filterMap.remove(FilterType.BeautyFilter)?.destroy()
+        }
     }
 
     fun setViewSize(width: Int, height: Int) {

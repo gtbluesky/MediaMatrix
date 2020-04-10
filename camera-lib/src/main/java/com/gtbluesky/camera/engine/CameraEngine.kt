@@ -121,10 +121,8 @@ class CameraEngine private constructor() {
         camera?.apply {
             cancelAutoFocus()
             parameters = cameraParams
-            cameraParam.onCameraFocusListener?.also {
-                autoFocus { success, _ ->
-                    it.onCameraFocus(success)
-                }
+            autoFocus { success, _ ->
+                cameraParam.onCameraFocusListener?.onCameraFocus(success)
             }
         }
     }
