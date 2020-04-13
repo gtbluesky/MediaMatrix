@@ -14,7 +14,7 @@ class CodecParam private constructor() {
     var channelCount = CHANNEL_COUNT
     var audioBitRate = AUDIO_BIT_RATE
 
-    var speed = 2f
+    var speed = 1f
 
     companion object {
         const val FRAME_RATE = 30

@@ -6,6 +6,9 @@ import android.os.Looper
 import android.os.Message
 import android.util.Log
 import java.io.IOException
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import kotlin.math.max
 
 class HwAudioHandler(
     looper: Looper,
@@ -16,16 +19,17 @@ class HwAudioHandler(
     private var isEncoding = false
     private val codecParam = CodecParam.getInstance()
     private var minBufferSize = 0
+    private var maxInputBufferSize = 8192
     private var audioRecord: AudioRecord? = null
     private var presentationTimeUs = 0L
     private var totalReadedBytes = 0
     private var audioProcessor: AudioProcessor? = null
+    private val audioReadData: ByteArray
 
     companion object {
         private val TAG = HwAudioHandler::class.java.simpleName
         //"audio/mp4a-latm"
         private const val AUDIO_ENCODE_MIME_TYPE = MediaFormat.MIMETYPE_AUDIO_AAC
-        private const val BUFFER_SIZE = 8192
     }
 
     init {
@@ -47,6 +51,7 @@ class HwAudioHandler(
             it.setOutputSampleRateHz(codecParam.sampleRate)
             it.flush()
         }
+        audioReadData = ByteArray(minBufferSize)
     }
 
     override fun handleMessage(msg: Message) {
@@ -75,7 +80,8 @@ class HwAudioHandler(
         ).apply {
             setInteger(MediaFormat.KEY_BIT_RATE, codecParam.audioBitRate)
             setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC)
-            setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, BUFFER_SIZE)
+            maxInputBufferSize = max(maxInputBufferSize, (minBufferSize / codecParam.speed * 2).toInt())
+            setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, maxInputBufferSize)
         }
         try {
             audioEncoder = MediaCodec.createEncoderByType(AUDIO_ENCODE_MIME_TYPE).apply {
@@ -113,6 +119,7 @@ class HwAudioHandler(
         Log.e(TAG, "endOfStream=$endOfStream")
         if (endOfStream) {
             removeMessages(HwEncoder.MSG_AUDIO_RECORDING)
+            audioProcessor?.queueEndOfStream()
             while (!handleAudioData()){}
             release()
         } else {
@@ -126,11 +133,26 @@ class HwAudioHandler(
             val index = it.dequeueInputBuffer(0)
             if (index >= 0) {
                 var length = 0
+                var inputBuffer: ByteBuffer? = null
                 CodecUtil.getInputBuffer(it, index)?.also { buffer ->
-                    buffer.clear()
-                    length = audioRecord?.read(buffer, minBufferSize) ?: 0
+                    inputBuffer = buffer
+                    length = audioRecord?.read(audioReadData, 0, minBufferSize) ?: 0
                 }
                 if (length > 0) {
+                    // 处理音频数据
+                    ByteBuffer.wrap(audioReadData, 0, length)
+                        .order(ByteOrder.LITTLE_ENDIAN).let { buffer ->
+                        audioProcessor?.queueInput(buffer)
+                    }
+                    audioProcessor?.getOutput()?.let { buffer ->
+                        if (buffer.hasRemaining()) {
+                            val outData = ByteArray(buffer.remaining())
+                            buffer.get(outData)
+                            length = outData.size
+                            inputBuffer?.clear()
+                            inputBuffer?.put(outData, 0, length)
+                        }
+                    }
                     totalReadedBytes += length
                     it.queueInputBuffer(
                         index,
