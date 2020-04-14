@@ -90,10 +90,14 @@ class HwVideoCombiner(
         }
         // 以获取到的音频和视频的 MediaFormat 作为输出视频和音频的格式
         if (hasVideoFormat) {
-            outVideoTrackIndex = muxer?.addTrack(videoFormat!!) ?: INVALID_TRACK_INDEX
+            videoFormat?.let {
+                outVideoTrackIndex = muxer?.addTrack(it) ?: INVALID_TRACK_INDEX
+            }
         }
         if (hasAudioFormat) {
-            outAudioTrackIndex = muxer?.addTrack(audioFormat!!) ?: INVALID_TRACK_INDEX
+            audioFormat?.let {
+                outAudioTrackIndex = muxer?.addTrack(it) ?: INVALID_TRACK_INDEX
+            }
         }
         muxer?.start()
         // MediaExtractor 遍历读取帧，MediaMuxer 写入帧，并记录帧信息
