@@ -118,12 +118,17 @@ class CameraEngine private constructor() {
         if (supportMetering) {
             cameraParams.meteringAreas = areas
         }
-        camera?.apply {
-            cancelAutoFocus()
-            parameters = cameraParams
-            autoFocus { success, _ ->
-                cameraParam.onCameraFocusListener?.onCameraFocus(success)
+        try {
+            camera?.apply {
+                cancelAutoFocus()
+                parameters = cameraParams
+                // 部分手机会出Exception
+                autoFocus { success, _ ->
+                    cameraParam.onCameraFocusListener?.onCameraFocus(success)
+                }
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
