@@ -129,18 +129,10 @@ open class EglSurfaceBase(protected var eglCore: EglCore) {
         eglCore.setPresentationTime(eglSurface, nsecs)
     }
 
-    /**
-     * Saves the EGL surface to a file.
-     *
-     *
-     * Expects that this object's EGL surface is current.
-     */
-    @Throws(IOException::class)
-    fun saveFrame(file: File) {
+    fun getCurrentFrame(): ByteBuffer {
         check(eglCore.isCurrent(eglSurface)) {
             "Expected EGL context/surface is not current"
         }
-
         // glReadPixels fills in a "direct" ByteBuffer with what is essentially big-endian RGBA
         // data (i.e. a byte of red, followed by a byte of green...).  While the Bitmap
         // constructor that takes an int[] wants little-endian ARGB (blue/red swapped), the
@@ -152,33 +144,20 @@ open class EglSurfaceBase(protected var eglCore: EglCore) {
         // Making this even more interesting is the upside-down nature of GL, which means
         // our output will look upside down relative to what appears on screen if the
         // typical GL conventions are used.
-
-        val filename = file.toString()
-
         val width = getWidth()
         val height = getHeight()
-        val buf = ByteBuffer.allocateDirect(width * height * 4)
-        buf.order(ByteOrder.LITTLE_ENDIAN)
-        GLES30.glReadPixels(
-            0, 0,
-            width, height,
-            GLES30.GL_RGBA,
-            GLES30.GL_UNSIGNED_BYTE,
-            buf
-        )
-        GLHelper.checkGlError("glReadPixels")
-        buf.rewind()
-
-        var bos: BufferedOutputStream? = null
-        try {
-            bos = BufferedOutputStream(FileOutputStream(filename))
-            val bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-            bmp.copyPixelsFromBuffer(buf)
-            bmp.compress(Bitmap.CompressFormat.PNG, 90, bos)
-            bmp.recycle()
-        } finally {
-            bos?.close()
-        }
-        Log.d(TAG, "Saved $width x $height frame as '$filename'")
+        return ByteBuffer
+            .allocateDirect(width * height * 4)
+            .order(ByteOrder.LITTLE_ENDIAN)
+            .apply {
+                GLES30.glReadPixels(
+                    0, 0, width, height,
+                    GLES30.GL_RGBA,
+                    GLES30.GL_UNSIGNED_BYTE,
+                    this
+                )
+                GLHelper.checkError("glReadPixels")
+                rewind()
+            }
     }
 }

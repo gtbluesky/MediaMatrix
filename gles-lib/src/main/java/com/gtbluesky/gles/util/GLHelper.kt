@@ -396,7 +396,6 @@ object GLHelper {
                 checkError("glReadPixels")
                 rewind()
             }
-
     }
 
     @JvmStatic

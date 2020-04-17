@@ -10,15 +10,17 @@ import android.util.Log
 import android.view.Surface
 import android.view.SurfaceHolder
 import com.gtbluesky.camera.AspectRatioType
-import com.gtbluesky.camera.engine.CameraEngine
 import com.gtbluesky.camera.CameraParam
 import com.gtbluesky.camera.ResolutionType
+import com.gtbluesky.camera.engine.CameraEngine
+import com.gtbluesky.camera.listener.OnCaptureFrameListener
 import com.gtbluesky.codec.CodecParam
 import com.gtbluesky.codec.HwEncoder
 import com.gtbluesky.gles.egl.EglCore
 import com.gtbluesky.gles.egl.WindowSurface
 import com.gtbluesky.gles.util.BitmapUtil
 import com.gtbluesky.gles.util.GLHelper
+import java.nio.ByteBuffer
 
 class RenderHandler(private val context: Context, looper: Looper) :
     Handler(looper), SurfaceTexture.OnFrameAvailableListener {
@@ -33,6 +35,8 @@ class RenderHandler(private val context: Context, looper: Looper) :
     private val transformMatrix = FloatArray(16)
     private var isRecording = false
     private var encoder: HwEncoder? = null
+    private var onCaptureFrameListener: OnCaptureFrameListener? = null
+    private var takePicture = false
 
     companion object {
         private val TAG = RenderHandler::class.java.simpleName
@@ -205,10 +209,17 @@ class RenderHandler(private val context: Context, looper: Looper) :
             it.updateTexImage()
             it.getTransformMatrix(transformMatrix)
             val outputTextureId = renderManager.drawFrame(textureId, transformMatrix)
-            windowSurface?.swapBuffers()
+            if (takePicture) {
+                windowSurface?.apply {
+                    onCaptureFrameListener?.onCaptureFrame(getCurrentFrame(), getWidth(), getHeight())
+                }
+                takePicture = false
+                onCaptureFrameListener = null
+            }
             if (isRecording) {
                 encoder?.onFrameAvailable(outputTextureId, it.timestamp)
             }
+            windowSurface?.swapBuffers()
         }
     }
 
@@ -244,23 +255,43 @@ class RenderHandler(private val context: Context, looper: Looper) :
         filePath: String,
         rotation: Int
     ) {
-        windowSurface?.apply {
-            val buffer = GLHelper.getCurrentFrame(
-                getWidth(),
-                getHeight()
-            )
-            CameraParam.getInstance().let {
-                BitmapUtil.saveBitmap(
-                    filePath,
-                    buffer,
-                    it.previewWidth.toFloat() / getWidth(),
-                    getWidth(),
-                    getHeight(),
-                    rotation
-                )
+        takePicture = true
+        onCaptureFrameListener = object : OnCaptureFrameListener {
+            override fun onCaptureFrame(
+                byteBuffer: ByteBuffer,
+                width: Int,
+                height: Int
+            ) {
+                CameraParam.getInstance().let {
+                    BitmapUtil.saveBitmap(
+                        filePath,
+                        byteBuffer,
+                        it.previewWidth.toFloat() / width,
+                        width,
+                        height,
+                        rotation
+                    )
+                }
+                Log.d(TAG, "照片保存在：$filePath")
             }
-            Log.d(TAG, "照片保存在：$filePath")
         }
+//        windowSurface?.apply {
+//            val buffer = GLHelper.getCurrentFrame(
+//                getWidth(),
+//                getHeight()
+//            )
+//            CameraParam.getInstance().let {
+//                BitmapUtil.saveBitmap(
+//                    filePath,
+//                    buffer,
+//                    it.previewWidth.toFloat() / getWidth(),
+//                    getWidth(),
+//                    getHeight(),
+//                    rotation
+//                )
+//            }
+//            Log.d(TAG, "照片保存在：$filePath")
+//        }
     }
 
     private fun handleToggleTorch(toggle: Boolean) {
