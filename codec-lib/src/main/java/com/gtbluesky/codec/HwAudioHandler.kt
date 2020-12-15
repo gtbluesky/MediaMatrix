@@ -6,9 +6,6 @@ import android.os.Looper
 import android.os.Message
 import android.util.Log
 import java.io.IOException
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
-import kotlin.math.max
 
 class HwAudioHandler(
     looper: Looper,
@@ -18,16 +15,14 @@ class HwAudioHandler(
     private lateinit var audioBufferInfo: MediaCodec.BufferInfo
     private var isEncoding = false
     private val codecParam = CodecParam.getInstance()
-    private var minBufferSize = 0
-    private var maxInputBufferSize = 8192
+    private val minBufferSize: Int
     private var audioRecord: AudioRecord? = null
     private var presentationTimeUs = 0L
     private var totalReadedBytes = 0
-    private var audioProcessor: AudioProcessor? = null
-    private val audioReadData: ByteArray
 
     companion object {
         private val TAG = HwAudioHandler::class.java.simpleName
+
         //"audio/mp4a-latm"
         private const val AUDIO_ENCODE_MIME_TYPE = MediaFormat.MIMETYPE_AUDIO_AAC
     }
@@ -45,13 +40,6 @@ class HwAudioHandler(
             AudioFormat.ENCODING_PCM_16BIT,
             minBufferSize
         )
-        audioProcessor = SonicAudioProcessor().also {
-            it.setSpeed(codecParam.speed)
-            it.configure(codecParam.sampleRate, codecParam.channelCount, AudioFormat.ENCODING_PCM_16BIT)
-            it.setOutputSampleRateHz(codecParam.sampleRate)
-            it.flush()
-        }
-        audioReadData = ByteArray(minBufferSize)
     }
 
     override fun handleMessage(msg: Message) {
@@ -60,10 +48,10 @@ class HwAudioHandler(
                 handleStart()
             }
             HwEncoder.MSG_AUDIO_RECORDING -> {
-                drainAudioEncoder(false)
+                handleAudioData(false)
             }
             HwEncoder.MSG_STOP_ENCODING -> {
-                drainAudioEncoder(true)
+                handleAudioData(true)
             }
             HwEncoder.MSG_QUIT -> {
                 looper.quit()
@@ -80,8 +68,6 @@ class HwAudioHandler(
         ).apply {
             setInteger(MediaFormat.KEY_BIT_RATE, codecParam.audioBitRate)
             setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC)
-            maxInputBufferSize = max(maxInputBufferSize, (minBufferSize / codecParam.speed * 2).toInt())
-            setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, maxInputBufferSize)
         }
         try {
             audioEncoder = MediaCodec.createEncoderByType(AUDIO_ENCODE_MIME_TYPE).apply {
@@ -114,45 +100,29 @@ class HwAudioHandler(
         audioRecord = null
     }
 
-    private fun drainAudioEncoder(endOfStream: Boolean) {
+    private fun handleAudioData(endOfStream: Boolean) {
         isEncoding = !endOfStream
-        Log.e(TAG, "endOfStream=$endOfStream")
+        Log.d(TAG, "endOfStream=$endOfStream")
         if (endOfStream) {
             removeMessages(HwEncoder.MSG_AUDIO_RECORDING)
-            audioProcessor?.queueEndOfStream()
-            while (!handleAudioData()){}
+            while (!drainAudioData()){}
             release()
         } else {
-            handleAudioData()
+            drainAudioData()
             sendMessage(obtainMessage(HwEncoder.MSG_AUDIO_RECORDING))
         }
     }
 
-    private fun handleAudioData() : Boolean {
+    private fun drainAudioData(): Boolean {
         audioEncoder?.let {
             val index = it.dequeueInputBuffer(0)
             if (index >= 0) {
                 var length = 0
-                var inputBuffer: ByteBuffer? = null
                 CodecUtil.getInputBuffer(it, index)?.also { buffer ->
-                    inputBuffer = buffer
-                    length = audioRecord?.read(audioReadData, 0, minBufferSize) ?: 0
+                    buffer.clear()
+                    length = audioRecord?.read(buffer, minBufferSize) ?: 0
                 }
                 if (length > 0) {
-                    // 处理音频数据
-                    ByteBuffer.wrap(audioReadData, 0, length)
-                        .order(ByteOrder.LITTLE_ENDIAN).let { buffer ->
-                        audioProcessor?.queueInput(buffer)
-                    }
-                    audioProcessor?.getOutput()?.let { buffer ->
-                        if (buffer.hasRemaining()) {
-                            val outData = ByteArray(buffer.remaining())
-                            buffer.get(outData)
-                            length = outData.size
-                            inputBuffer?.clear()
-                            inputBuffer?.put(outData, 0, length)
-                        }
-                    }
                     totalReadedBytes += length
                     it.queueInputBuffer(
                         index,
@@ -161,8 +131,9 @@ class HwAudioHandler(
                         presentationTimeUs,
                         if (isEncoding) 0 else MediaCodec.BUFFER_FLAG_END_OF_STREAM
                     )
-                    presentationTimeUs = 1000000L * totalReadedBytes / (codecParam.channelCount * 2 * codecParam.sampleRate)
-                    Log.d(TAG, "presentationTime(Us)：$presentationTimeUs, presentationTime(s):  ${presentationTimeUs / 1000000f}")
+                    presentationTimeUs =
+                        1000000L * totalReadedBytes / (codecParam.channelCount * 2 * codecParam.sampleRate)
+                    Log.d(TAG, "presentationTime(s):  ${presentationTimeUs / 1000000f}")
                 }
             }
             var outIndex: Int
@@ -171,7 +142,7 @@ class HwAudioHandler(
                 when {
                     outIndex >= 0 -> {
                         if (audioBufferInfo.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) {
-                            Log.e(TAG, "audio encode end")
+                            Log.d(TAG, "audio encode end")
                             it.releaseOutputBuffer(outIndex, false)
                             return true
                         }
@@ -179,7 +150,11 @@ class HwAudioHandler(
                             outputBuffer.position(audioBufferInfo.offset)
                             if (encoder.muxerStarted && audioBufferInfo.presentationTimeUs > 0) {
                                 try {
-                                    encoder.mediaMuxer?.writeSampleData(encoder.audioTrackIndex, outputBuffer, audioBufferInfo)
+                                    encoder.mediaMuxer?.writeSampleData(
+                                        encoder.audioTrackIndex,
+                                        outputBuffer,
+                                        audioBufferInfo
+                                    )
                                 } catch (e: Exception) {
                                     e.printStackTrace()
                                 }
@@ -188,20 +163,23 @@ class HwAudioHandler(
                         }
 
                     }
-                    outIndex == MediaCodec.INFO_TRY_AGAIN_LATER -> {}
+                    outIndex == MediaCodec.INFO_TRY_AGAIN_LATER -> {
+                    }
                     outIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> {
                         synchronized(encoder.muxerLock) {
                             encoder.audioTrackIndex = encoder.mediaMuxer
                                 ?.addTrack(it.outputFormat)
                                 ?: HwEncoder.INVALID_TRACK_INDEX
                             if (encoder.videoTrackIndex > HwEncoder.INVALID_TRACK_INDEX
-                                && encoder.audioTrackIndex > HwEncoder.INVALID_TRACK_INDEX) {
+                                && encoder.audioTrackIndex > HwEncoder.INVALID_TRACK_INDEX
+                            ) {
                                 encoder.mediaMuxer?.start()
                                 encoder.muxerStarted = true
                                 encoder.muxerLock.notifyAll()
                             }
                             while (encoder.videoTrackIndex == HwEncoder.INVALID_TRACK_INDEX
-                                || encoder.audioTrackIndex == HwEncoder.INVALID_TRACK_INDEX) {
+                                || encoder.audioTrackIndex == HwEncoder.INVALID_TRACK_INDEX
+                            ) {
                                 try {
                                     encoder.muxerLock.wait(100)
                                 } catch (e: InterruptedException) {

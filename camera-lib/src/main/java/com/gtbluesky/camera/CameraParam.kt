@@ -13,20 +13,26 @@ class CameraParam private constructor() {
     var aspectRatioType = AspectRatioType.W_9_H_16
     var ratio = 0f
         private set
+
     // 期望帧率
     var expectFps = EXPECTED_PREVIEW_FPS
+
     // 实际帧率
     var previewFps = 0
         private set
+
     // 期望预览宽度
     var expectWidth = 0
         private set
+
     // 期望预览高度
-    var expectHeight = (expectWidth / ratio).toInt()
+    var expectHeight = 0
         private set
+
     // 实际预览宽度
     var previewWidth = 0
         private set
+
     // 实际预览高度
     var previewHeight = 0
         private set
@@ -34,7 +40,9 @@ class CameraParam private constructor() {
     var onCameraFocusListener: OnCameraFocusListener? = null
 
     var viewWidth = 0
+        private set
     var viewHeight = 0
+        private set
     var cameraId = BACK_CAMERA_ID
 
     companion object {
@@ -42,7 +50,6 @@ class CameraParam private constructor() {
         const val FRONT_CAMERA_ID = Camera.CameraInfo.CAMERA_FACING_FRONT
         const val BACK_CAMERA_ID = Camera.CameraInfo.CAMERA_FACING_BACK
         private const val MAX_FOCUS_WEIGHT = 1000 // 对焦区域最大权重
-        private const val DEFAULT_RECORD_TIME = 15000 //ms
         private const val EXPECTED_PREVIEW_FPS = 30
         private const val RATIO_1_1 = 1f
         private const val RATIO_3_4 = 0.75f
@@ -50,63 +57,70 @@ class CameraParam private constructor() {
 
         fun getInstance() = CameraParamHolder.holder
 
+        // From big to small
         private val sizeComparator = Comparator<Camera.Size> { o1, o2 ->
-            (o1.width * o1.height - o2.width * o2.height).sign
+            (o2.width * o2.height - o1.width * o1.height).sign
         }
 
+        /**
+         * 相机预览尺寸选取算法（兼顾分辨率和画幅）
+         * 第一种：期望的宽高值都有
+         * 第二种：期望的宽有，但预览尺寸的width大于期望高，则需要裁剪
+         * 第三种：不符合上述条件但其宽高比与某个预览尺寸的宽高比相同，且预览的分辨率大于期望值，则缩小处理
+         * 第四种：不符合上述条件，则取最大预览尺寸，先缩放后裁剪
+         */
         internal fun getOptimalSize(
             sizes: List<Camera.Size>,
             expectWidth: Int,
-            expectHeight: Int,
-            closeEnough: Double = 0.0
+            expectHeight: Int
         ): Camera.Size {
             Collections.sort(
                 sizes,
                 sizeComparator
             )
             val targetRatio = expectWidth.toDouble() / expectHeight.toDouble()
-            var optimalSize: Camera.Size? = null
-            var minDiff = Double.MAX_VALUE
+            var bestSize: Camera.Size? = null
+            var widthEqualSize: Camera.Size? = null
+            var ratioEqualSize: Camera.Size? = null
 
             sizes.forEach {
+                Log.d(
+                    TAG,
+                    "width=${it.width}, height=${it.height}, ratio=${it.height.toFloat() / it.width}"
+                )
+                Log.d(TAG, "expectRatio=${targetRatio}")
                 if (expectWidth == it.height && expectHeight == it.width) {
-                    optimalSize = it
+                    bestSize = it
                     return@forEach
                 }
-//                val ratio = it.width.toDouble() / it.height.toDouble()
-//
-//                if (abs(ratio - targetRatio) < minDiff) {
-//                    optimalSize = it
-//                    minDiff = abs(ratio - targetRatio)
-//                }
-//
-//                if (minDiff <= closeEnough) {
-//                    return@forEach
-//                }
+                if (expectHeight < it.width && expectWidth == it.height) {
+                    widthEqualSize = it
+                }
+                if (expectHeight * it.height == expectWidth * it.width && it.width > expectHeight) {
+                    ratioEqualSize = it
+                }
             }
 
+            val choosedSize = bestSize ?: widthEqualSize ?: ratioEqualSize ?: sizes[0]
             Log.d(
                 TAG,
-                "width: ${optimalSize?.width}, height: ${optimalSize?.height}"
+                "choosed size: width: ${choosedSize.width}, height: ${choosedSize.height}"
             )
 
-            return optimalSize!!
+            return choosedSize
         }
     }
 
-    init {
-        initParams(
-            ResolutionType.R_720,
-            AspectRatioType.W_9_H_16
-        )
-    }
-
-    private fun initParams(
+    fun initParams(
         resolutionType: ResolutionType,
-        aspectRatioType: AspectRatioType
+        aspectRatioType: AspectRatioType,
+        viewWidth: Int,
+        viewHeight: Int
     ) {
         this.resolutionType = resolutionType
         this.aspectRatioType = aspectRatioType
+        this.viewWidth = viewWidth
+        this.viewHeight = viewHeight
         expectWidth = when (resolutionType) {
             ResolutionType.R_540 -> 540
             ResolutionType.R_720 -> 720
@@ -116,27 +130,25 @@ class CameraParam private constructor() {
             AspectRatioType.W_1_H_1 -> RATIO_1_1
             AspectRatioType.W_3_H_4 -> RATIO_3_4
             AspectRatioType.W_9_H_16 -> RATIO_9_16
+            AspectRatioType.FULL -> viewWidth.toFloat() / viewHeight
         }
         expectHeight = (expectWidth / ratio).toInt()
     }
 
     internal fun reset() {
         ratio = 0f
-        expectFps =
-            EXPECTED_PREVIEW_FPS
+        expectFps = EXPECTED_PREVIEW_FPS
         previewFps = 0
         expectWidth = 0
-        expectHeight = (expectWidth / ratio).toInt()
+        expectHeight = 0
         previewWidth = 0
         previewHeight = 0
         onCameraFocusListener = null
-        viewWidth = 0
-        viewHeight = 0
-        cameraId =
-            BACK_CAMERA_ID
+        cameraId = BACK_CAMERA_ID
         initParams(
             ResolutionType.R_720,
-            AspectRatioType.W_9_H_16
+            AspectRatioType.W_9_H_16,
+            viewWidth, viewHeight
         )
     }
 
@@ -145,7 +157,7 @@ class CameraParam private constructor() {
         resolutionType: ResolutionType,
         aspectRatioType: AspectRatioType
     ) {
-        initParams(resolutionType, aspectRatioType)
+        initParams(resolutionType, aspectRatioType, viewWidth, viewHeight)
         setPreviewSize(sizes)
     }
 
@@ -171,7 +183,8 @@ class CameraParam private constructor() {
 enum class AspectRatioType {
     W_1_H_1,
     W_3_H_4,
-    W_9_H_16
+    W_9_H_16,
+    FULL
 }
 
 enum class ResolutionType {

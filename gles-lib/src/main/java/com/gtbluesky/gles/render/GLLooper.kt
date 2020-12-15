@@ -6,7 +6,9 @@ import android.view.Surface
 
 class GLLooper {
 
-    private var glRenderer = GLRenderer()
+    private val glRenderer by lazy {
+        GLRenderer()
+    }
 
     private var glThread: HandlerThread? = HandlerThread("Android Java GLThread")
 

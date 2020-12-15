@@ -14,7 +14,6 @@ class OESInputFilter :
     var transformMatrix: FloatArray? = null
 
     companion object {
-        private val TAG = OESInputFilter::class.java.simpleName
         private const val VERTEX_SHADER = """
             attribute vec4 aPosition;
             attribute vec4 aTextureCoord;

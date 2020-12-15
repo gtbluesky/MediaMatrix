@@ -1,22 +1,16 @@
 package com.gtbluesky.mediamatrix.activity
 
 import android.graphics.Color
-import android.hardware.SensorManager
 import android.os.Bundle
 import android.os.Environment
 import android.os.SystemClock
-import android.util.Log
-import android.view.OrientationEventListener
 import android.view.View
-import android.view.WindowManager
 import android.widget.Chronometer
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.gtbluesky.camera.CameraParam
 import com.gtbluesky.camera.MatrixCameraFragment
-import com.gtbluesky.camera.listener.OnCameraFocusListener
 import com.gtbluesky.camera.listener.OnZoomChangeListener
 import com.gtbluesky.mediamatrix.R
 import com.yanzhenjie.permission.AndPermission
@@ -34,16 +28,19 @@ class CameraPreviewActivity : AppCompatActivity() {
 
     companion object {
         private const val FRAGMENT_CAMERA = "fragment_camera"
-        private val TAG = CameraPreviewActivity::class.java.simpleName
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setWindowFlag()
         setContentView(R.layout.activity_camera_preview)
         initView()
         setListener()
         openCamera()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        setFullScreen()
     }
 
     private fun openCamera() {
@@ -82,17 +79,6 @@ class CameraPreviewActivity : AppCompatActivity() {
             }.start()
     }
 
-    private fun setWindowFlag() {
-        window.apply {
-            addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
-            addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
-            addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-            attributes = attributes.apply {
-                systemUiVisibility = View.SYSTEM_UI_FLAG_LOW_PROFILE
-            }
-        }
-    }
-
     override fun onBackPressed() {
         supportFragmentManager.backStackEntryCount.let {
             when {
@@ -118,14 +104,23 @@ class CameraPreviewActivity : AppCompatActivity() {
         beautyIv.alpha = 0.5f
     }
 
+    private fun setFullScreen() {
+        window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                or View.SYSTEM_UI_FLAG_FULLSCREEN
+                or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN)
+    }
+
     private fun setListener() {
-        switchIv.setOnClickListener{
+        switchIv.setOnClickListener {
             matrixCameraFragment.switchCamera()
         }
-        flashIv.setOnClickListener{
+        flashIv.setOnClickListener {
             matrixCameraFragment.toggleTorch()
         }
-        recordIv.setOnClickListener{
+        recordIv.setOnClickListener {
             if (recordIv.drawable.level == 1) {
                 takePicture()
             } else {
@@ -143,7 +138,7 @@ class CameraPreviewActivity : AppCompatActivity() {
 //                showToast("$success")
 //            }
 //        }
-        beautyIv.setOnClickListener{
+        beautyIv.setOnClickListener {
             if (it.alpha != 1f) {
                 matrixCameraFragment.setBeautyFilter(true)
                 it.alpha = 1f

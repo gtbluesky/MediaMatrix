@@ -11,5 +11,5 @@ class MirrorScreenFilter(context: Context, isMirrorX: Boolean = true) : NormalFi
         } else {
             "shader/mirror_screen_y.frag"
         }
-    )!!
+    ) ?: ""
 )

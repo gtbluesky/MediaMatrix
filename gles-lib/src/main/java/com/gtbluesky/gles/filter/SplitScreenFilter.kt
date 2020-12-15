@@ -12,5 +12,5 @@ class SplitScreenFilter(context: Context, screenNum: Int = 2) : NormalFilter(
             9 -> "shader/split_screen_9.frag"
             else -> "shader/split_screen_2.frag"
         }
-    )!!
+    ) ?: ""
 )

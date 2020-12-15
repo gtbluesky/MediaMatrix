@@ -27,7 +27,7 @@ class HwVideoHandler(
     private var videoEncoder: MediaCodec? = null
     private lateinit var videoBufferInfo: MediaCodec.BufferInfo
 
-    private var inputSurface: Surface? = null
+    private lateinit var inputSurface: Surface
     private var eglCore: EglCore? = null
     private var windowSurface: WindowSurface? = null
     private val recordFilter : NormalFilter by lazy {
@@ -144,14 +144,14 @@ class HwVideoHandler(
     }
 
     private fun drainVideoEncoder(endOfStream: Boolean) {
-        Log.e(TAG, "endOfStream=$endOfStream")
+        Log.d(TAG, "endOfStream=$endOfStream")
         videoEncoder?.let {
             if (endOfStream) {
                 it.signalEndOfInputStream()
             }
             while (true) {
                 val outputBufferIndex = it.dequeueOutputBuffer(videoBufferInfo, TIMEOUT_USEC)
-                Log.e(TAG, "关键帧：${videoBufferInfo.flags and MediaCodec.BUFFER_FLAG_KEY_FRAME != 0}")
+                Log.d(TAG, "关键帧：${videoBufferInfo.flags and MediaCodec.BUFFER_FLAG_KEY_FRAME != 0}")
                 if (outputBufferIndex >= 0) {
                     CodecUtil.getOutputBuffer(it, outputBufferIndex)?.let { outputBuffer ->
                         if (videoBufferInfo.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG != 0) {
@@ -200,7 +200,7 @@ class HwVideoHandler(
                             encoder.videoTrackIndex = encoder.mediaMuxer
                                 ?.addTrack(outputFormat)
                                 ?: HwEncoder.INVALID_TRACK_INDEX
-                            if (encoder.enableAudio) {
+                            if (!encoder.isMute) {
                                 if (encoder.videoTrackIndex > HwEncoder.INVALID_TRACK_INDEX
                                     && encoder.audioTrackIndex > HwEncoder.INVALID_TRACK_INDEX) {
                                     encoder.mediaMuxer?.start()
@@ -244,7 +244,7 @@ class HwVideoHandler(
             windowSurface?.setPresentationTime(it)
         }
         windowSurface?.swapBuffers()
-        Log.e(TAG, "frame num = ${++frameNum}")
+        Log.d(TAG, "frame num = ${++frameNum}")
         drainVideoEncoder(false)
     }
 
@@ -260,13 +260,14 @@ class HwVideoHandler(
         eglCore?.apply {
             release()
         }
-        eglCore = EglCore(eglContext, EglCore.FLAG_RECORDABLE)
-        if (windowSurface == null) {
-            windowSurface = WindowSurface(eglCore!!, inputSurface!!, true)
-        } else {
-            windowSurface?.recreate(eglCore!!)
+        eglCore = EglCore(eglContext, EglCore.FLAG_RECORDABLE).also {
+            if (windowSurface == null) {
+                windowSurface = WindowSurface(it, inputSurface, true)
+            } else {
+                windowSurface?.recreate(it)
+            }
+            windowSurface?.makeCurrent()
         }
-        windowSurface?.makeCurrent()
 
         GLES30.glDisable(GLES30.GL_DEPTH_TEST)
         GLES30.glDisable(GLES30.GL_CULL_FACE)

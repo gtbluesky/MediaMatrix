@@ -64,7 +64,7 @@ class ToneCurveFilter(
             val greenCurve = createSplineCurve(curves[2])
             val blueCurve = createSplineCurve(curves[3])
 
-            if (redCurve!!.size >= 256 && greenCurve!!.size >= 256 && blueCurve!!.size >= 256 && rgbCompositeCurve!!.size >= 256) {
+            if (redCurve.size >= 256 && greenCurve.size >= 256 && blueCurve.size >= 256 && rgbCompositeCurve.size >= 256) {
                 val toneCurveByteArray = ByteArray(256 * 4)
                 for (currentCurveIndex in 0..255) {
                     // BGRA for upload to texture
@@ -121,9 +121,9 @@ class ToneCurveFilter(
         return (input.read() shl 8 or input.read()).toShort()
     }
 
-    private fun createSplineCurve(points: Array<PointF>): ArrayList<Float>? {
+    private fun createSplineCurve(points: Array<PointF>): ArrayList<Float> {
         if (points.isEmpty()) {
-            return null
+            return arrayListOf()
         }
         // Sort the array
         val sortedPoints = points.clone()
@@ -138,7 +138,7 @@ class ToneCurveFilter(
         val splinePoints = createSplineCurve2(convertedPoints)
         // If we have a first point like (0.3, 0) we'll be missing some points at the beginning
         // that should be 0.
-        val firstSplinePoint = splinePoints!![0]
+        val firstSplinePoint = splinePoints[0]
         if (firstSplinePoint.x > 0) {
             for (i in firstSplinePoint.x downTo 0) {
                 splinePoints.add(0, Point(i, 0))
@@ -169,18 +169,18 @@ class ToneCurveFilter(
         return preparedSplinePoints
     }
 
-    private fun createSplineCurve2(points: Array<Point>): ArrayList<Point>? {
+    private fun createSplineCurve2(points: Array<Point>): ArrayList<Point> {
         val sdA = createSecondDerivative(points)
         // Is [points count] equal to [sdA count]?
         // int n = [points count];
-        val n = sdA?.size ?: 0
+        val n = sdA.size
         if (n < 1) {
-            return null
+            return arrayListOf()
         }
         val sd = DoubleArray(n)
         // From NSMutableArray to sd[n];
         for (i in 0 until n) {
-            sd[i] = sdA?.get(i)!!
+            sd[i] = sdA[i]
         }
         val output = ArrayList<Point>(n + 1)
         for (i in 0 until n - 1) {
@@ -207,10 +207,10 @@ class ToneCurveFilter(
         return output
     }
 
-    private fun createSecondDerivative(points: Array<Point>): ArrayList<Double>? {
+    private fun createSecondDerivative(points: Array<Point>): ArrayList<Double> {
         val n = points.size
         if (n <= 1) {
-            return null
+            return ArrayList()
         }
         val matrix = Array(n) { DoubleArray(3) }
         val result = DoubleArray(n)

@@ -28,7 +28,7 @@ class RenderHandler(private val context: Context, looper: Looper) :
     private var eglCore: EglCore? = null
     private var windowSurface: WindowSurface? = null
     private var surfaceTexture: SurfaceTexture? = null
-    private var textureId = GLES30.GL_NONE
+    private var oesTextureId = GLES30.GL_NONE
     private val renderManager: RenderManager by lazy {
         RenderManager(context)
     }
@@ -36,7 +36,7 @@ class RenderHandler(private val context: Context, looper: Looper) :
     private var isRecording = false
     private var encoder: HwEncoder? = null
     private var onCaptureFrameListener: OnCaptureFrameListener? = null
-    private var takePicture = false
+    private var isSnapping = false
 
     companion object {
         private val TAG = RenderHandler::class.java.simpleName
@@ -112,7 +112,7 @@ class RenderHandler(private val context: Context, looper: Looper) :
             }
             MSG_TAKE_PICTURE -> {
                 (msg.obj as? String)?.let {
-                    handleTakePicture(it, msg.arg1)
+                    handleSnap(it, msg.arg1)
                 }
             }
             MSG_TOGGLE_TORCH -> {
@@ -139,15 +139,16 @@ class RenderHandler(private val context: Context, looper: Looper) :
     }
 
     private fun handleSurfaceCreated(surface: Surface) {
-        eglCore = EglCore(flags = EglCore.FLAG_RECORDABLE)
-        windowSurface = WindowSurface(eglCore!!, surface, false)
-        windowSurface?.makeCurrent()
+        eglCore = EglCore(flags = EglCore.FLAG_RECORDABLE).also {
+            windowSurface = WindowSurface(it, surface, false)
+            windowSurface?.makeCurrent()
+        }
 
         GLES30.glDisable(GLES30.GL_DEPTH_TEST)
         GLES30.glDisable(GLES30.GL_CULL_FACE)
 
-        textureId = GLHelper.createOESTexture()
-        surfaceTexture = SurfaceTexture(textureId).also {
+        oesTextureId = GLHelper.createOESTexture()
+        surfaceTexture = SurfaceTexture(oesTextureId).also {
             it.setOnFrameAvailableListener(this)
             CameraEngine.getInstance().startPreview(context, it)
         }
@@ -155,15 +156,16 @@ class RenderHandler(private val context: Context, looper: Looper) :
     }
 
     private fun handleSurfaceCreated(surfaceTexture: SurfaceTexture) {
-        eglCore = EglCore(flags = EglCore.FLAG_RECORDABLE)
-        windowSurface = WindowSurface(eglCore!!, surfaceTexture)
-        windowSurface?.makeCurrent()
+        eglCore = EglCore(flags = EglCore.FLAG_RECORDABLE).also {
+            windowSurface = WindowSurface(it, surfaceTexture)
+            windowSurface?.makeCurrent()
+        }
 
         GLES30.glDisable(GLES30.GL_DEPTH_TEST)
         GLES30.glDisable(GLES30.GL_CULL_FACE)
 
-        textureId = GLHelper.createOESTexture()
-        this.surfaceTexture = SurfaceTexture(textureId).also {
+        oesTextureId = GLHelper.createOESTexture()
+        this.surfaceTexture = SurfaceTexture(oesTextureId).also {
             it.setOnFrameAvailableListener(this)
             CameraEngine.getInstance().startPreview(context, it)
         }
@@ -208,12 +210,13 @@ class RenderHandler(private val context: Context, looper: Looper) :
             windowSurface?.makeCurrent()
             it.updateTexImage()
             it.getTransformMatrix(transformMatrix)
-            val outputTextureId = renderManager.drawFrame(textureId, transformMatrix)
-            if (takePicture) {
+            //原始图像处理
+            val outputTextureId = renderManager.drawFrame(oesTextureId, transformMatrix)
+            if (isSnapping) {
                 windowSurface?.apply {
                     onCaptureFrameListener?.onCaptureFrame(getCurrentFrame(), getWidth(), getHeight())
                 }
-                takePicture = false
+                isSnapping = false
                 onCaptureFrameListener = null
             }
             if (isRecording) {
@@ -251,11 +254,11 @@ class RenderHandler(private val context: Context, looper: Looper) :
         encoder = null
     }
 
-    private fun handleTakePicture(
+    private fun handleSnap(
         filePath: String,
         rotation: Int
     ) {
-        takePicture = true
+        isSnapping = true
         onCaptureFrameListener = object : OnCaptureFrameListener {
             override fun onCaptureFrame(
                 byteBuffer: ByteBuffer,

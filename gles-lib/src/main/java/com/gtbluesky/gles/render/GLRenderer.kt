@@ -18,8 +18,10 @@ class GLRenderer {
             null,
             EglCore.FLAG_RECORDABLE
         )
-        windowSurface = WindowSurface(eglCore!!, surface, false)
-        windowSurface?.makeCurrent()
+        eglCore?.let {
+            windowSurface = WindowSurface(it, surface, false)
+            windowSurface?.makeCurrent()
+        }
         this.shape = shape
         this.shape?.init()
     }

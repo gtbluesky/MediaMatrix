@@ -172,7 +172,7 @@ class HwVideoCombiner(
                     }
                 } else {
                     if (extractor.sampleTrackIndex != currentTrackIndex) {
-                        Log.e(TAG, "got sample from track ${extractor.sampleTrackIndex}, expected $currentTrackIndex")
+                        Log.d(TAG, "got sample from track ${extractor.sampleTrackIndex}, expected $currentTrackIndex")
                     }
                     // 读取帧的pts
                     presentationTimeUs = extractor.sampleTime

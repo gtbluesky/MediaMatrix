@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.view.*
 import android.widget.TextView
 import com.gtbluesky.mediamatrix.R
+import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity(), View.OnClickListener {
 
@@ -28,6 +29,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         skySphereTv.setOnClickListener(this)
         particleEffectTv.setOnClickListener(this)
         cameraTv.setOnClickListener(this)
+        tv_record.setOnClickListener(this)
     }
 
     override fun onClick(v: View?) {
@@ -51,6 +53,10 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             }
             R.id.tv_camera -> {
                 intent.setClass(this, CameraPreviewActivity::class.java)
+                startActivity(intent)
+            }
+            R.id.tv_record -> {
+                intent.setClass(this, AudioRecordActivity::class.java)
                 startActivity(intent)
             }
         }

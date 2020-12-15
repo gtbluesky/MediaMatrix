@@ -72,9 +72,9 @@ class Camera2Engine private constructor() {
             CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_LEGACY,
             CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_LIMITED
         )
-        val backSupportLevel = backCharacteristics.get(CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL)
-        val frontSupportLevel = frontCharacteristics.get(CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL)
-        return (frontSupportLevel!! !in sortedLevels && backSupportLevel!! !in sortedLevels)
+        val backSupportLevel = backCharacteristics.get(CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL) ?: -1
+        val frontSupportLevel = frontCharacteristics.get(CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL) ?: -1
+        return (frontSupportLevel !in sortedLevels && backSupportLevel !in sortedLevels)
     }
 
     companion object {
@@ -198,7 +198,7 @@ class Camera2Engine private constructor() {
         val supportCustomFocus = cameraCharacteristics.get(CameraCharacteristics.CONTROL_MAX_REGIONS_AF) ?: 0 > 0
         val supportMetering = cameraCharacteristics.get(CameraCharacteristics.CONTROL_MAX_REGIONS_AE) ?: 0 > 0
         val arraySize = cameraCharacteristics.get(CameraCharacteristics.SENSOR_INFO_PIXEL_ARRAY_SIZE)
-        Log.e(TAG, "supportCustomFocus: $supportCustomFocus , supportMetering: $supportMetering, arraySize: ${arraySize?.width} * ${arraySize?.height}")
+        Log.d(TAG, "supportCustomFocus: $supportCustomFocus , supportMetering: $supportMetering, arraySize: ${arraySize?.width} * ${arraySize?.height}")
         captureRequestBuilder.apply {
             set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_AUTO)
 //            set(CaptureRequest.CONTROL_AE_REGIONS, )
@@ -260,7 +260,7 @@ class Camera2Engine private constructor() {
         Collections.sort(list, sizeComparator)
         var size = list[0]
         for (s in list) {
-            Log.e(TAG, "height: ${s.height}, width: ${s.width}")
+            Log.d(TAG, "height: ${s.height}, width: ${s.width}")
             if (equalRate(s, rate)) {
                 if (s.height >= minWidth) {
                     return s

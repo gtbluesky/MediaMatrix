@@ -15,7 +15,6 @@ open class NormalFilter(
 ) : BaseFilter() {
 
     companion object {
-        private val TAG = NormalFilter::class.java.simpleName
         private const val VERTEX_SHADER = """
             attribute vec4 aPosition;
             attribute vec4 aTextureCoord;
@@ -42,7 +41,6 @@ open class NormalFilter(
     }
 
     override fun initProgram() {
-        Log.e(TAG, "fragmentShader=\n$fragmentShader")
         program = GLHelper.createProgram(
             vertexShader,
             fragmentShader

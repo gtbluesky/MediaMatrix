@@ -67,9 +67,7 @@ class RenderManager(context: Context) {
 
     fun setViewSize(width: Int, height: Int) {
         filterMap.forEach {
-            it.value.let { filter ->
-                filter.setViewSize(width, height)
-            }
+            it.value.setViewSize(width, height)
         }
     }
 

@@ -21,7 +21,7 @@ class EglCore @JvmOverloads constructor(sharedContext: EGLContext? = null, flags
 
     companion object {
 
-        private val TAG = EglCore::class.java.simpleName
+        private val TAG = this::class.java.simpleName
 
         /**
          * Constructor flag: surface must be recordable.  This discourages EGL from using a

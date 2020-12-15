@@ -19,6 +19,10 @@ class MatrixCameraFragment : Fragment() {
 
     private lateinit var contentView: RelativeLayout
     private var previewRenderer: PreviewRenderer? = null
+
+    /**
+     * false时，需主动调用startPreview()方法
+     */
     private var previewNow = false
     private val scaleGestureDetector: ScaleGestureDetector by lazy {
         ScaleGestureDetector(context, ZoomScaleGestureDetector())
@@ -28,10 +32,11 @@ class MatrixCameraFragment : Fragment() {
 
     var torchOn = false
         private set
+
     private var rotation = 0
 
     private val orientationController: OrientationController by lazy {
-        OrientationController(context!!).also {
+        OrientationController(context).also {
             it.onRotationChangeListener = object : OnRotationChangeListener {
                 override fun onRotationChange(rotation: Int) {
                     this@MatrixCameraFragment.rotation = rotation
@@ -40,7 +45,7 @@ class MatrixCameraFragment : Fragment() {
         }
     }
     private val sensorController: SensorController by lazy {
-        SensorController(context!!).also {
+        SensorController(context).also {
             it.startFocusCallback = object : StartFocusCallback {
                 override fun onStart() {
                     CameraEngine.getInstance().setAutoFocus()
@@ -50,8 +55,6 @@ class MatrixCameraFragment : Fragment() {
     }
 
     companion object {
-        private val TAG = MatrixCameraFragment::class.java.simpleName
-
         @JvmStatic
         fun newInstance(bundle: Bundle? = null, previewNow: Boolean = false): MatrixCameraFragment {
             val fragment = MatrixCameraFragment().also {
@@ -68,8 +71,9 @@ class MatrixCameraFragment : Fragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         return RelativeLayout(context).also {
+            it.keepScreenOn = true
             contentView = it
             if (previewNow) {
                 initCameraView()
@@ -78,55 +82,61 @@ class MatrixCameraFragment : Fragment() {
     }
 
     private fun initCameraView() {
-        previewRenderer = PreviewRenderer(context!!)
-        TextureView(context).also {
-            it.surfaceTextureListener = object : TextureView.SurfaceTextureListener {
-                override fun onSurfaceTextureAvailable(
-                    surface: SurfaceTexture,
-                    width: Int,
-                    height: Int
-                ) {
-                    CameraParam.getInstance().let {
-                        it.viewWidth = width
-                        it.viewHeight = height
-                    }
-                    previewRenderer?.let {
-                        it.bindSurface(surface)
-                        it.changePreviewSize()
-                    }
-                }
-
-                override fun onSurfaceTextureSizeChanged(
-                    surface: SurfaceTexture?,
-                    width: Int,
-                    height: Int
-                ) {
-                    CameraParam.getInstance().let {
-                        it.viewWidth = width
-                        it.viewHeight = height
-                    }
-                    previewRenderer?.changePreviewSize()
-                }
-
-                override fun onSurfaceTextureDestroyed(surface: SurfaceTexture?): Boolean {
-                    previewRenderer?.unBindSurface()
-                    return true
-                }
-
-                override fun onSurfaceTextureUpdated(surface: SurfaceTexture?) {}
-            }
-            contentView.addView(it)
-            contentView.setOnTouchListener { v, event ->
-                if (event.pointerCount == 1) {
-                    if (event.action == MotionEvent.ACTION_UP
-                        && event.eventTime - event.downTime < 500
+        context?.let {
+            previewRenderer = PreviewRenderer(it)
+            TextureView(it).also {
+                it.surfaceTextureListener = object : TextureView.SurfaceTextureListener {
+                    override fun onSurfaceTextureAvailable(
+                        surface: SurfaceTexture,
+                        width: Int,
+                        height: Int
                     ) {
-                        CameraEngine.getInstance()
-                            .setAutoFocus(Point(event.x.toInt(), event.y.toInt()))
+                        CameraParam.getInstance().initParams(
+                            ResolutionType.R_720,
+                            AspectRatioType.FULL,
+                            width, height
+                        )
+                        previewRenderer?.apply {
+                            bindSurface(surface)
+                            changePreviewSize()
+                        }
                     }
-                    true
-                } else {
-                    scaleGestureDetector.onTouchEvent(event)
+
+                    override fun onSurfaceTextureSizeChanged(
+                        surface: SurfaceTexture?,
+                        width: Int,
+                        height: Int
+                    ) {
+                        CameraParam.getInstance().initParams(
+                            ResolutionType.R_720,
+                            AspectRatioType.FULL,
+                            width, height
+                        )
+                        previewRenderer?.changePreviewSize()
+                    }
+
+                    override fun onSurfaceTextureDestroyed(surface: SurfaceTexture?): Boolean {
+                        previewRenderer?.unBindSurface()
+                        return true
+                    }
+
+                    override fun onSurfaceTextureUpdated(surface: SurfaceTexture?) {}
+                }
+                contentView.addView(it)
+                contentView.setOnTouchListener { _, event ->
+                    if (event.pointerCount == 1) {
+                        //focus
+                        if (event.action == MotionEvent.ACTION_UP
+                            && event.eventTime - event.downTime < 500
+                        ) {
+                            CameraEngine.getInstance()
+                                .setAutoFocus(Point(event.x.toInt(), event.y.toInt()))
+                        }
+                        true
+                    } else {
+                        //zoom
+                        scaleGestureDetector.onTouchEvent(event)
+                    }
                 }
             }
         }
@@ -177,7 +187,7 @@ class MatrixCameraFragment : Fragment() {
         sensorController.unregister()
     }
 
-    fun startPrewiew() {
+    fun startPreview() {
         if (context == null) {
             Toast.makeText(
                 context,
@@ -197,7 +207,9 @@ class MatrixCameraFragment : Fragment() {
         initCameraView()
     }
 
-    fun switchCamera() = previewRenderer?.switchCamera()
+    fun switchCamera() {
+        previewRenderer?.switchCamera()
+    }
 
     fun takePicture(filePath: String, useRotation: Boolean) {
         previewRenderer?.takePicture(

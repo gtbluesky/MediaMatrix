@@ -6,7 +6,7 @@ import android.util.Log
 import android.view.OrientationEventListener
 import com.gtbluesky.camera.listener.OnRotationChangeListener
 
-class OrientationController(context: Context) :
+class OrientationController(context: Context?) :
     OrientationEventListener(context, SensorManager.SENSOR_DELAY_UI) {
 
     var onRotationChangeListener: OnRotationChangeListener? = null

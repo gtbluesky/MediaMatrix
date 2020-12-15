@@ -6,9 +6,10 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import com.gtbluesky.camera.listener.StartFocusCallback
+import kotlin.math.abs
 import kotlin.math.sqrt
 
-class SensorController(context: Context) : SensorEventListener {
+class SensorController(context: Context?) : SensorEventListener {
 
     private var lastX = 0
     private var lastY = 0
@@ -18,7 +19,7 @@ class SensorController(context: Context) : SensorEventListener {
     private var status = STATUS_NONE
     var startFocusCallback: StartFocusCallback? = null
     private val sensorManager: SensorManager by lazy {
-        context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        context?.getSystemService(Context.SENSOR_SERVICE) as SensorManager
     }
     private val sensor: Sensor by lazy {
         sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
@@ -46,9 +47,9 @@ class SensorController(context: Context) : SensorEventListener {
         val z = event.values[2].toInt()
         val stamp = System.currentTimeMillis()
         if (status != STATUS_NONE) {
-            val px: Int = Math.abs(lastX - x)
-            val py: Int = Math.abs(lastY - y)
-            val pz: Int = Math.abs(lastZ - z)
+            val px: Int = abs(lastX - x)
+            val py: Int = abs(lastY - y)
+            val pz: Int = abs(lastZ - z)
             val value = sqrt(px * px + py * py + (pz * pz).toDouble())
             if (value > 1.4) {
                 status = STATUS_MOVE

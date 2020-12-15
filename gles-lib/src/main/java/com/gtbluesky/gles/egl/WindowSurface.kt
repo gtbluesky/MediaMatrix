@@ -69,6 +69,8 @@ class WindowSurface : EglSurfaceBase {
             "not yet implemented for SurfaceTexture"
         }
         eglCore = newEglCore          // switch to new context
-        createWindowSurface(surface!!)  // create new surface
+        surface?.let {
+            createWindowSurface(it)  // create new surface
+        }
     }
 }

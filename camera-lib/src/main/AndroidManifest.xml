@@ -10,4 +10,10 @@
         android:name="android.hardware.camera"
         android:required="true" />
 
+    <application>
+        <service
+            android:name=".service.AudioRecordService"
+            android:exported="false" />
+    </application>
+
 </manifest>

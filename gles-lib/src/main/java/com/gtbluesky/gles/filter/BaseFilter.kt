@@ -15,16 +15,20 @@ abstract class BaseFilter {
     protected var textureUnitHandle = GLES30.GL_NONE
 
     val mvpMatrix = FloatArray(GL_MATRIX_SIZE)
+
     // 纹理宽高，与相机预览宽高一致
     var textureWidth = 0
     var textureHeight = 0
+
     // 视图宽高，用于设置glViewport宽高
     protected var viewWidth = 0
     protected var viewHeight = 0
     protected var program = GLES30.GL_NONE
-    // FBO宽高，一般与相机预览宽高一致
+
+    // FBO宽高，与纹理宽高一致
     protected var frameWidth = 0
     protected var frameHeight = 0
+
     // FBO
     protected var frameBufferId = GLES30.GL_NONE
     protected var frameBufferTextureId = GLES30.GL_NONE
@@ -32,7 +36,6 @@ abstract class BaseFilter {
     var scale = 1f
 
     companion object {
-        private val TAG = BaseFilter::class.java.simpleName
         const val GL_MATRIX_SIZE = 16
     }
 

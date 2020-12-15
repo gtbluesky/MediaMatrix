@@ -5,6 +5,9 @@ import android.opengl.EGLContext
 import android.os.HandlerThread
 import java.io.IOException
 
+/**
+ * Hardware Encoder
+ */
 class HwEncoder(private val rotation: Int) {
 
     var mediaMuxer: MediaMuxer? = null
@@ -18,7 +21,7 @@ class HwEncoder(private val rotation: Int) {
     var duration = 0L
         private set
 
-    var enableAudio = true
+    var isMute = false
 
     // 视频编码线程
     private var videoEncodeThread: HandlerThread? = null
@@ -28,14 +31,12 @@ class HwEncoder(private val rotation: Int) {
     private var audioHandler: HwAudioHandler? = null
 
     companion object {
-        private val TAG = HwEncoder::class.java.simpleName
         const val INVALID_TRACK_INDEX = -1
-        const val MSG_RENDER = 0x01
-        const val MSG_AUDIO_RECORDING = 0x02
-        const val MSG_START_ENCODING = 0x03
-        const val MSG_STOP_ENCODING = 0x04
-        const val MSG_QUIT = 0x05
-
+        const val MSG_RENDER = 0x1
+        const val MSG_AUDIO_RECORDING = 0x2
+        const val MSG_START_ENCODING = 0x3
+        const val MSG_STOP_ENCODING = 0x4
+        const val MSG_QUIT = 0x5
     }
 
     init {
@@ -46,7 +47,7 @@ class HwEncoder(private val rotation: Int) {
                     it.createVideoEncoder(rotation)
                 }
             }
-        if (enableAudio) {
+        if (!isMute) {
             audioEncodeThread = HandlerThread("AudioEncodeThread")
                 .apply {
                     start()
