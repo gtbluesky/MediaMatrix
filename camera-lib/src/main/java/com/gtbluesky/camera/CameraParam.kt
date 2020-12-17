@@ -9,8 +9,6 @@ import kotlin.math.sign
 
 class CameraParam private constructor() {
 
-    var resolutionType = ResolutionType.R_720
-    var aspectRatioType = AspectRatioType.W_9_H_16
     var ratio = 0f
         private set
 
@@ -29,11 +27,11 @@ class CameraParam private constructor() {
     var expectHeight = 0
         private set
 
-    // 实际预览宽度
+    // 相机预览宽度
     var previewWidth = 0
         private set
 
-    // 实际预览高度
+    // 相机预览高度
     var previewHeight = 0
         private set
 
@@ -44,6 +42,8 @@ class CameraParam private constructor() {
     var viewHeight = 0
         private set
     var cameraId = BACK_CAMERA_ID
+
+    private var isLandscape = false
 
     companion object {
         private val TAG = CameraParam::class.java.simpleName
@@ -61,78 +61,47 @@ class CameraParam private constructor() {
         private val sizeComparator = Comparator<Camera.Size> { o1, o2 ->
             (o2.width * o2.height - o1.width * o1.height).sign
         }
-
-        /**
-         * 相机预览尺寸选取算法（兼顾分辨率和画幅）
-         * 第一种：期望的宽高值都有
-         * 第二种：期望的宽有，但预览尺寸的width大于期望高，则需要裁剪
-         * 第三种：不符合上述条件但其宽高比与某个预览尺寸的宽高比相同，且预览的分辨率大于期望值，则缩小处理
-         * 第四种：不符合上述条件，则取最大预览尺寸，先缩放后裁剪
-         */
-        internal fun getOptimalSize(
-            sizes: List<Camera.Size>,
-            expectWidth: Int,
-            expectHeight: Int
-        ): Camera.Size {
-            Collections.sort(
-                sizes,
-                sizeComparator
-            )
-            val targetRatio = expectWidth.toDouble() / expectHeight.toDouble()
-            var bestSize: Camera.Size? = null
-            var widthEqualSize: Camera.Size? = null
-            var ratioEqualSize: Camera.Size? = null
-
-            sizes.forEach {
-                Log.d(
-                    TAG,
-                    "width=${it.width}, height=${it.height}, ratio=${it.height.toFloat() / it.width}"
-                )
-                Log.d(TAG, "expectRatio=${targetRatio}")
-                if (expectWidth == it.height && expectHeight == it.width) {
-                    bestSize = it
-                    return@forEach
-                }
-                if (expectHeight < it.width && expectWidth == it.height) {
-                    widthEqualSize = it
-                }
-                if (expectHeight * it.height == expectWidth * it.width && it.width > expectHeight) {
-                    ratioEqualSize = it
-                }
-            }
-
-            val choosedSize = bestSize ?: widthEqualSize ?: ratioEqualSize ?: sizes[0]
-            Log.d(
-                TAG,
-                "choosed size: width: ${choosedSize.width}, height: ${choosedSize.height}"
-            )
-
-            return choosedSize
-        }
     }
 
     fun initParams(
         resolutionType: ResolutionType,
         aspectRatioType: AspectRatioType,
         viewWidth: Int,
-        viewHeight: Int
+        viewHeight: Int,
+        isLandscape: Boolean = false
     ) {
-        this.resolutionType = resolutionType
-        this.aspectRatioType = aspectRatioType
         this.viewWidth = viewWidth
         this.viewHeight = viewHeight
-        expectWidth = when (resolutionType) {
+        this.isLandscape = isLandscape
+        when (resolutionType) {
             ResolutionType.R_540 -> 540
             ResolutionType.R_720 -> 720
             ResolutionType.R_1080 -> 1080
+        }.let {
+            if (isLandscape) {
+                expectHeight = it
+            } else {
+                expectWidth = it
+            }
         }
         ratio = when (aspectRatioType) {
             AspectRatioType.W_1_H_1 -> RATIO_1_1
             AspectRatioType.W_3_H_4 -> RATIO_3_4
             AspectRatioType.W_9_H_16 -> RATIO_9_16
-            AspectRatioType.FULL -> viewWidth.toFloat() / viewHeight
+            AspectRatioType.FULL -> if (isLandscape) {
+                viewHeight.toFloat() / viewWidth
+            } else {
+                viewWidth.toFloat() / viewHeight
+            }
         }
-        expectHeight = (expectWidth / ratio).toInt()
+        if (isLandscape) {
+            expectWidth = ((expectHeight / ratio).toInt() + 1) / 2 * 2
+        } else {
+            expectHeight = ((expectWidth / ratio).toInt() + 1) / 2 * 2
+        }
+        CodecParam.getInstance().videoWidth = expectWidth
+        CodecParam.getInstance().videoHeight = expectHeight
+        CodecParam.getInstance().videoBitRate = expectWidth * expectHeight * 3
     }
 
     internal fun reset() {
@@ -162,17 +131,73 @@ class CameraParam private constructor() {
     }
 
     internal fun setPreviewSize(sizes: List<Camera.Size>): Camera.Size {
-        return getOptimalSize(
-            sizes,
-            expectWidth,
-            expectHeight
-        ).also {
-            previewWidth = it.height
-            previewHeight = it.width
-            CodecParam.getInstance().videoWidth = previewWidth
-            CodecParam.getInstance().videoHeight = previewHeight
-            CodecParam.getInstance().videoBitRate = previewWidth * previewHeight * 3
+        return if (isLandscape) {
+            getOptimalSize(
+                sizes,
+                expectHeight,
+                expectWidth,
+            ).also {
+                previewWidth = it.width
+                previewHeight = it.height
+            }
+        } else {
+            getOptimalSize(
+                sizes,
+                expectWidth,
+                expectHeight,
+            ).also {
+                previewWidth = it.height
+                previewHeight = it.width
+            }
         }
+    }
+
+    /**
+     * 相机预览尺寸选取算法（兼顾分辨率和画幅）
+     * 第一种：期望的宽高值都有
+     * 第二种：期望的宽有，但预览尺寸的width大于期望高，则需要裁剪
+     * 第三种：不符合上述条件但其宽高比与某个预览尺寸的宽高比相同，且预览的分辨率大于期望值，则缩小处理
+     * 第四种：不符合上述条件，则取最大预览尺寸，先缩放后裁剪
+     */
+    private fun getOptimalSize(
+        sizes: List<Camera.Size>,
+        expectWidth: Int,
+        expectHeight: Int
+    ): Camera.Size {
+        Collections.sort(
+            sizes,
+            sizeComparator
+        )
+        val targetRatio = expectWidth.toFloat() / expectHeight
+        var bestSize: Camera.Size? = null
+        var widthEqualSize: Camera.Size? = null
+        var ratioEqualSize: Camera.Size? = null
+
+        sizes.forEach {
+            Log.d(
+                TAG,
+                "width=${it.width}, height=${it.height}, ratio=${it.height.toFloat() / it.width}"
+            )
+            Log.d(TAG, "expectRatio=${targetRatio}")
+            if (expectWidth == it.height && expectHeight == it.width) {
+                bestSize = it
+                return@forEach
+            }
+            if (expectHeight < it.width && expectWidth == it.height) {
+                widthEqualSize = it
+            }
+            if (expectHeight * it.height == expectWidth * it.width && it.width > expectHeight) {
+                ratioEqualSize = it
+            }
+        }
+
+        val choosedSize = bestSize ?: widthEqualSize ?: ratioEqualSize ?: sizes[0]
+        Log.d(
+            TAG,
+            "choosed size: width: ${choosedSize.width}, height: ${choosedSize.height}"
+        )
+
+        return choosedSize
     }
 
     private object CameraParamHolder {

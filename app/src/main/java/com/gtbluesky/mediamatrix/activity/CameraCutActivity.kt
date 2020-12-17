@@ -20,15 +20,14 @@ import com.gtbluesky.camera.listener.OnZoomChangeListener
 import com.gtbluesky.mediamatrix.R
 import com.yanzhenjie.permission.AndPermission
 import com.yanzhenjie.permission.Permission
+import kotlinx.android.synthetic.main.activity_camera_cut.*
 
-class CameraPreviewActivity : AppCompatActivity() {
+class CameraCutActivity : AppCompatActivity() {
 
-    private lateinit var chronometer: Chronometer
     private lateinit var switchIv: ImageView
     private lateinit var flashIv: ImageView
     private lateinit var recordIv: ImageView
     private lateinit var zoomTv: TextView
-    private lateinit var beautyIv: ImageView
     private lateinit var matrixCameraFragment: MatrixCameraFragment
 
     companion object {
@@ -37,7 +36,7 @@ class CameraPreviewActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_camera_preview)
+        setContentView(R.layout.activity_camera_cut)
         initView()
         setListener()
         openCamera()
@@ -59,7 +58,7 @@ class CameraPreviewActivity : AppCompatActivity() {
             ).onGranted {
                 MatrixCameraFragment.newInstance(previewNow = true).let {
                     matrixCameraFragment = it
-                    it.setResolution(ResolutionType.R_540, AspectRatioType.FULL)
+                    it.setResolution(ResolutionType.R_720, AspectRatioType.FULL)
                     it.onZoomChangeListener = object : OnZoomChangeListener {
                         override fun onZoomChange(scale: Float, completed: Boolean) {
                             zoomTv.text = "${String.format("%.1f", scale)}X"
@@ -100,14 +99,11 @@ class CameraPreviewActivity : AppCompatActivity() {
     }
 
     private fun initView() {
-        chronometer = findViewById(R.id.chronometer)
         switchIv = findViewById(R.id.switch_iv)
         flashIv = findViewById(R.id.flash_iv)
         recordIv = findViewById(R.id.record_iv)
         recordIv.drawable.level = 1
         zoomTv = findViewById(R.id.tv_zoom)
-        beautyIv = findViewById(R.id.beauty_tv)
-        beautyIv.alpha = 0.5f
     }
 
     private fun setFullScreen() {
@@ -133,63 +129,16 @@ class CameraPreviewActivity : AppCompatActivity() {
             matrixCameraFragment.toggleTorch()
         }
         recordIv.setOnClickListener {
-            if (recordIv.drawable.level == 1) {
-                takePicture()
-            } else {
-                stopRecord()
-            }
-        }
-        recordIv.setOnLongClickListener {
-            if (recordIv.drawable.level == 1) {
-                startRecord()
-            }
-            true
-        }
-//        CameraParam.getInstance().onCameraFocusListener = object : OnCameraFocusListener {
-//            override fun onCameraFocus(success: Boolean) {
-//                showToast("$success")
-//            }
-//        }
-        beautyIv.setOnClickListener {
-            if (it.alpha != 1f) {
-                matrixCameraFragment.setBeautyFilter(true)
-                it.alpha = 1f
-            } else {
-                matrixCameraFragment.setBeautyFilter(false)
-                it.alpha = 0.5f
-            }
+            takePicture()
         }
     }
 
     private fun takePicture() {
         matrixCameraFragment.takePicture(
-            "${Environment.getExternalStorageDirectory().absolutePath}/pic_${System.currentTimeMillis()}.jpg"
+            "${Environment.getExternalStorageDirectory().absolutePath}/pic_${System.currentTimeMillis()}.jpg",
+            Rect(view_mask.left, view_mask.top, view_mask.right, view_mask.bottom)
         )
-        showToast("照片已保存")
-    }
-
-    private fun startRecord() {
-        showToast("开始录像")
-        recordIv.drawable.level = 2
-        chronometer.let {
-            it.base = SystemClock.elapsedRealtime()
-            it.start()
-            it.setTextColor(Color.RED)
-        }
-        matrixCameraFragment.startRecording(
-            "${Environment.getExternalStorageDirectory().absolutePath}/vod_${System.currentTimeMillis()}.mp4"
-        )
-    }
-
-    private fun stopRecord() {
-        recordIv.drawable.level = 1
-        chronometer.let {
-            it.base = SystemClock.elapsedRealtime()
-            it.stop()
-            it.setTextColor(Color.WHITE)
-        }
-        matrixCameraFragment.stopRecording()
-        showToast("视频已保存")
+        showToast("照片已保存, ${view_mask.left}, ${view_mask.top},${view_mask.right}, ${view_mask.bottom}")
     }
 
     private fun showToast(msg: String) {

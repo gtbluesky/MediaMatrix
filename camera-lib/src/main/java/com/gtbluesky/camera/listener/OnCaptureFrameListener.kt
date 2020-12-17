@@ -4,7 +4,7 @@ import java.nio.ByteBuffer
 
 interface OnCaptureFrameListener {
     fun onCaptureFrame(
-        byteBuffer: ByteBuffer,
+        byteBuffer: ByteBuffer?,
         width: Int,
         height: Int
     )

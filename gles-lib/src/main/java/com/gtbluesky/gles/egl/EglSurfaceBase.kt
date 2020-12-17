@@ -1,6 +1,7 @@
 package com.gtbluesky.gles.egl
 
 import android.graphics.Bitmap
+import android.graphics.Rect
 import android.opengl.EGL14
 import android.opengl.GLES30
 import android.util.Log
@@ -129,7 +130,7 @@ open class EglSurfaceBase(protected var eglCore: EglCore) {
         eglCore.setPresentationTime(eglSurface, nsecs)
     }
 
-    fun getCurrentFrame(): ByteBuffer {
+    fun getCurrentFrame(rect: Rect? = null): ByteBuffer? {
         check(eglCore.isCurrent(eglSurface)) {
             "Expected EGL context/surface is not current"
         }
@@ -144,14 +145,22 @@ open class EglSurfaceBase(protected var eglCore: EglCore) {
         // Making this even more interesting is the upside-down nature of GL, which means
         // our output will look upside down relative to what appears on screen if the
         // typical GL conventions are used.
-        val width = getWidth()
-        val height = getHeight()
+        val width = rect?.width() ?: getWidth()
+        val height = rect?.height() ?: getHeight()
+        //FBO原点在左下角
+        val x = rect?.left ?: 0
+        val y = (getHeight() - (rect?.bottom ?: getHeight()))
+        if (width == 0 || height == 0) {
+            return null
+        }
         return ByteBuffer
             .allocateDirect(width * height * 4)
             .order(ByteOrder.LITTLE_ENDIAN)
             .apply {
                 GLES30.glReadPixels(
-                    0, 0, width, height,
+                    x,
+                    y,
+                    width, height,
                     GLES30.GL_RGBA,
                     GLES30.GL_UNSIGNED_BYTE,
                     this

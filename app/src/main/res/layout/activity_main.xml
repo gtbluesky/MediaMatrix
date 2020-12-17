@@ -57,6 +57,15 @@
             android:gravity="center"/>
 
         <TextView
+            android:id="@+id/tv_camera_cut"
+            android:layout_width="wrap_content"
+            android:layout_height="50dp"
+            android:textSize="15sp"
+            android:textColor="@android:color/black"
+            android:text="相机（裁剪）"
+            android:gravity="center"/>
+
+        <TextView
             android:id="@+id/tv_record"
             android:layout_width="wrap_content"
             android:layout_height="50dp"

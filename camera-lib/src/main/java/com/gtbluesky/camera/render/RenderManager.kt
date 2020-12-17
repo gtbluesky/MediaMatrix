@@ -51,12 +51,12 @@ class RenderManager(context: Context) {
                     CameraParam.getInstance().viewHeight
                 )
                 it.initFrameBuffer(
-                    CameraParam.getInstance().previewWidth,
-                    CameraParam.getInstance().previewHeight
+                    CameraParam.getInstance().expectWidth,
+                    CameraParam.getInstance().expectHeight
                 )
                 it.setTextureSize(
-                    CameraParam.getInstance().previewWidth,
-                    CameraParam.getInstance().previewHeight
+                    CameraParam.getInstance().expectWidth,
+                    CameraParam.getInstance().expectHeight
                 )
                 filterMap[FilterType.BeautyFilter] = it
             }
@@ -65,18 +65,43 @@ class RenderManager(context: Context) {
         }
     }
 
-    fun setViewSize(width: Int, height: Int) {
+    fun setViewSize() {
         filterMap.forEach {
-            it.value.setViewSize(width, height)
+            it.value.setViewSize(
+                CameraParam.getInstance().viewWidth,
+                CameraParam.getInstance().viewHeight
+            )
         }
     }
 
-    fun setTextureSize(width: Int, height: Int) {
+    fun setFrameSize() {
         filterMap.forEach {
-            it.value.let { filter ->
-                filter.initFrameBuffer(width, height)
-                filter.setTextureSize(width, height)
+            it.value.initFrameBuffer(
+                CameraParam.getInstance().expectWidth,
+                CameraParam.getInstance().expectHeight
+            )
+        }
+    }
+
+    fun setTextureSize() {
+        filterMap.forEach {
+            if (it.key == FilterType.OESInputFilter) {
+                it.value.setTextureSize(
+                    CameraParam.getInstance().previewWidth,
+                    CameraParam.getInstance().previewHeight
+                )
+            } else {
+                it.value.setTextureSize(
+                    CameraParam.getInstance().expectWidth,
+                    CameraParam.getInstance().expectHeight
+                )
             }
+        }
+    }
+
+    fun adjustMvpMatrix() {
+        filterMap.forEach {
+            it.value.adjustMvpMatrix()
         }
     }
 

@@ -1,6 +1,7 @@
 package com.gtbluesky.camera.render
 
 import android.content.Context
+import android.graphics.Rect
 import android.graphics.SurfaceTexture
 import android.opengl.GLES30
 import android.os.Handler
@@ -13,6 +14,7 @@ import com.gtbluesky.camera.AspectRatioType
 import com.gtbluesky.camera.CameraParam
 import com.gtbluesky.camera.ResolutionType
 import com.gtbluesky.camera.engine.CameraEngine
+import com.gtbluesky.camera.entity.SnapInfoEntity
 import com.gtbluesky.camera.listener.OnCaptureFrameListener
 import com.gtbluesky.codec.CodecParam
 import com.gtbluesky.codec.HwEncoder
@@ -37,39 +39,56 @@ class RenderHandler(private val context: Context, looper: Looper) :
     private var encoder: HwEncoder? = null
     private var onCaptureFrameListener: OnCaptureFrameListener? = null
     private var isSnapping = false
+    private var snapInfoEntity: SnapInfoEntity? = null
 
     companion object {
         private val TAG = RenderHandler::class.java.simpleName
+
         // Surface创建
         const val MSG_SURFACE_CREATED = 0x01
+
         // Surface改变
         const val MSG_SURFACE_CHANGED = 0x02
+
         // Surface销毁
         const val MSG_SURFACE_DESTROYED = 0x03
+
         // 渲染
         const val MSG_RENDER = 0x04
+
         // 开始录制
         const val MSG_START_RECORDING = 0x05
+
         // 停止录制
         const val MSG_STOP_RECORDING = 0x06
+
         // 切换相机
         const val MSG_SWITCH_CAMERA = 0x08
+
         // 预览帧回调
         const val MSG_PREVIEW_CALLBACK = 0x09
+
         // 拍照
         const val MSG_TAKE_PICTURE = 0x0a
+
         // 计算fps
         const val MSG_CALCULATE_FPS = 0x0b
+
         // 切换边框模糊功能
         const val MSG_CHANGE_EDGE_BLUR = 0x0c
+
         // 切换动态滤镜
         const val MSG_CHANGE_DYNAMIC_COLOR = 0x0d
+
         // 切换动态彩妆
         const val MSG_CHANGE_DYNAMIC_MAKEUP = 0x0e
+
         // 切换动态动态资源
         const val MSG_CHANGE_DYNAMIC_RESOURCE = 0x0f
+
         // 开关闪关灯
         const val MSG_TOGGLE_TORCH = 0x10
+
         // 调整分辨率和画幅
         const val MSG_CHANGE_RESOLUTION = 0x11
         const val MSG_USE_BEAUTY = 0x12
@@ -111,8 +130,8 @@ class RenderHandler(private val context: Context, looper: Looper) :
                 handleStopRecording()
             }
             MSG_TAKE_PICTURE -> {
-                (msg.obj as? String)?.let {
-                    handleSnap(it, msg.arg1)
+                (msg.obj as? SnapInfoEntity)?.let {
+                    handleSnap(it)
                 }
             }
             MSG_TOGGLE_TORCH -> {
@@ -178,14 +197,10 @@ class RenderHandler(private val context: Context, looper: Looper) :
     private fun handleSurfaceChanged() {
         windowSurface?.makeCurrent()
         renderManager.apply {
-            setViewSize(
-                CameraParam.getInstance().viewWidth,
-                CameraParam.getInstance().viewHeight
-            )
-            setTextureSize(
-                CameraParam.getInstance().previewWidth,
-                CameraParam.getInstance().previewHeight
-            )
+            setViewSize()
+            setTextureSize()
+            setFrameSize()
+            adjustMvpMatrix()
         }
     }
 
@@ -214,7 +229,11 @@ class RenderHandler(private val context: Context, looper: Looper) :
             val outputTextureId = renderManager.drawFrame(oesTextureId, transformMatrix)
             if (isSnapping) {
                 windowSurface?.apply {
-                    onCaptureFrameListener?.onCaptureFrame(getCurrentFrame(), getWidth(), getHeight())
+                    onCaptureFrameListener?.onCaptureFrame(
+                        getCurrentFrame(snapInfoEntity?.clipRect),
+                        snapInfoEntity?.clipRect?.width() ?: getWidth(),
+                        snapInfoEntity?.clipRect?.height() ?: getHeight()
+                    )
                 }
                 isSnapping = false
                 onCaptureFrameListener = null
@@ -254,47 +273,34 @@ class RenderHandler(private val context: Context, looper: Looper) :
         encoder = null
     }
 
-    private fun handleSnap(
-        filePath: String,
-        rotation: Int
-    ) {
+    private fun handleSnap(entity: SnapInfoEntity) {
+        snapInfoEntity = entity
         isSnapping = true
         onCaptureFrameListener = object : OnCaptureFrameListener {
             override fun onCaptureFrame(
-                byteBuffer: ByteBuffer,
+                byteBuffer: ByteBuffer?,
                 width: Int,
                 height: Int
             ) {
-                CameraParam.getInstance().let {
-                    BitmapUtil.saveBitmap(
-                        filePath,
-                        byteBuffer,
-                        it.previewWidth.toFloat() / width,
-                        width,
-                        height,
-                        rotation
-                    )
+                if (width == 0 || height == 0) {
+                    Log.e(TAG, "picture's width or height cannot be 0")
+                    return
                 }
-                Log.d(TAG, "照片保存在：$filePath")
+                BitmapUtil.saveBitmap(
+                    entity.filePath,
+                    byteBuffer,
+                    if (entity.clipRect == null) {
+                        CameraParam.getInstance().expectWidth.toFloat() / width
+                    } else {
+                        1f
+                    },
+                    width,
+                    height,
+                    entity.rotation
+                )
+                Log.d(TAG, "照片保存在：${entity.filePath}")
             }
         }
-//        windowSurface?.apply {
-//            val buffer = GLHelper.getCurrentFrame(
-//                getWidth(),
-//                getHeight()
-//            )
-//            CameraParam.getInstance().let {
-//                BitmapUtil.saveBitmap(
-//                    filePath,
-//                    buffer,
-//                    it.previewWidth.toFloat() / getWidth(),
-//                    getWidth(),
-//                    getHeight(),
-//                    rotation
-//                )
-//            }
-//            Log.d(TAG, "照片保存在：$filePath")
-//        }
     }
 
     private fun handleToggleTorch(toggle: Boolean) {

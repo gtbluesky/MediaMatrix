@@ -16,7 +16,7 @@ abstract class BaseFilter {
 
     val mvpMatrix = FloatArray(GL_MATRIX_SIZE)
 
-    // 纹理宽高，与相机预览宽高一致
+    // 输入的纹理宽高，与相机预览宽高一致
     var textureWidth = 0
     var textureHeight = 0
 
@@ -44,6 +44,8 @@ abstract class BaseFilter {
     abstract fun setViewSize(width: Int, height: Int)
 
     abstract fun setTextureSize(width: Int, height: Int)
+
+    open fun adjustMvpMatrix() {}
 
     abstract fun drawFrame(
         textureId: Int,

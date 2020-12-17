@@ -42,6 +42,11 @@
             android:screenOrientation="portrait"
             android:theme="@style/NoActionBar" />
 
+        <activity
+            android:name=".activity.CameraCutActivity"
+            android:screenOrientation="landscape"
+            android:theme="@style/NoActionBar" />
+
         <activity android:name=".activity.AudioRecordActivity"
             android:screenOrientation="portrait"/>
     </application>

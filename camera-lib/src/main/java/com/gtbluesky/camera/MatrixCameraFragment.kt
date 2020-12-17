@@ -1,6 +1,8 @@
 package com.gtbluesky.camera
 
+import android.content.res.Configuration
 import android.graphics.Point
+import android.graphics.Rect
 import android.graphics.SurfaceTexture
 import android.os.Bundle
 import android.view.*
@@ -10,6 +12,7 @@ import androidx.fragment.app.Fragment
 import com.gtbluesky.camera.controller.OrientationController
 import com.gtbluesky.camera.controller.SensorController
 import com.gtbluesky.camera.engine.CameraEngine
+import com.gtbluesky.camera.entity.SnapInfoEntity
 import com.gtbluesky.camera.listener.OnRotationChangeListener
 import com.gtbluesky.camera.listener.OnZoomChangeListener
 import com.gtbluesky.camera.listener.StartFocusCallback
@@ -34,6 +37,8 @@ class MatrixCameraFragment : Fragment() {
         private set
 
     private var rotation = 0
+    private var resolutionType = ResolutionType.R_720
+    private var aspectRatioType = AspectRatioType.FULL
 
     private val orientationController: OrientationController by lazy {
         OrientationController(context).also {
@@ -91,11 +96,7 @@ class MatrixCameraFragment : Fragment() {
                         width: Int,
                         height: Int
                     ) {
-                        CameraParam.getInstance().initParams(
-                            ResolutionType.R_720,
-                            AspectRatioType.FULL,
-                            width, height
-                        )
+                        initCameraParams(width, height)
                         previewRenderer?.apply {
                             bindSurface(surface)
                             changePreviewSize()
@@ -107,11 +108,7 @@ class MatrixCameraFragment : Fragment() {
                         width: Int,
                         height: Int
                     ) {
-                        CameraParam.getInstance().initParams(
-                            ResolutionType.R_720,
-                            AspectRatioType.FULL,
-                            width, height
-                        )
+                        initCameraParams(width, height)
                         previewRenderer?.changePreviewSize()
                     }
 
@@ -171,6 +168,21 @@ class MatrixCameraFragment : Fragment() {
 //        }
     }
 
+    private fun initCameraParams(viewWidth: Int, viewHeight: Int) {
+        var isLandscape = false
+        context?.let {
+            if (it.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                isLandscape = true
+            }
+        }
+        CameraParam.getInstance().initParams(
+            resolutionType,
+            aspectRatioType,
+            viewWidth, viewHeight,
+            isLandscape
+        )
+    }
+
     override fun onResume() {
         super.onResume()
         orientationController.let {
@@ -211,17 +223,26 @@ class MatrixCameraFragment : Fragment() {
         previewRenderer?.switchCamera()
     }
 
-    fun takePicture(filePath: String, useRotation: Boolean) {
+    /**
+     * 只在竖屏模式下可设置useRotation=true
+     */
+    fun takePicture(filePath: String, clipRect: Rect? = null, useRotation: Boolean = false) {
         previewRenderer?.takePicture(
-            filePath, if (useRotation) {
-                rotation
-            } else {
-                OrientationController.ROTATION_0
-            }
+            SnapInfoEntity(
+                filePath, if (useRotation) {
+                    rotation
+                } else {
+                    OrientationController.ROTATION_0
+                },
+                clipRect
+            )
         )
     }
 
-    fun startRecording(filePath: String, useRotation: Boolean) {
+    /**
+     * 只在竖屏模式下可设置useRotation=true
+     */
+    fun startRecording(filePath: String, useRotation: Boolean = false) {
         previewRenderer?.startRecording(
             filePath, if (useRotation) {
                 rotation
@@ -240,10 +261,20 @@ class MatrixCameraFragment : Fragment() {
         }
     }
 
+    fun setResolution(
+        resolutionType: ResolutionType,
+        aspectRatioType: AspectRatioType
+    ) {
+        this.resolutionType = resolutionType
+        this.aspectRatioType = aspectRatioType
+    }
+
     fun changeResolution(
         resolutionType: ResolutionType,
         aspectRatioType: AspectRatioType
     ) {
+        this.resolutionType = resolutionType
+        this.aspectRatioType = aspectRatioType
         previewRenderer?.changeResolution(
             resolutionType,
             aspectRatioType

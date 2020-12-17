@@ -43,16 +43,14 @@ class HwVideoCombiner(
         }
         var hasAudioFormat = false
         var hasVideoFormat = false
-        val videoIterator = videoList.iterator()
         // 开始合并
         combineListener?.onCombineStart()
         // MediaExtractor 获取多媒体信息
         // 获取到第一个可用的音频和视频的 MediaFormat
-        while (videoIterator.hasNext()) {
-            val videoPath = videoIterator.next()
+        videoList.forEach {
             val extractor = MediaExtractor()
             try {
-                extractor.setDataSource(videoPath)
+                extractor.setDataSource(it)
             } catch (e: IOException) {
                 e.printStackTrace()
             }
@@ -64,7 +62,7 @@ class HwVideoCombiner(
                     videoFormat = extractor.getTrackFormat(trackIndex)
                     hasVideoFormat = true
                 } else {
-                    Log.e(TAG, "No video track found in $videoPath")
+                    Log.e(TAG, "No video track found in $it")
                 }
             }
             if (!hasAudioFormat) {
@@ -74,12 +72,12 @@ class HwVideoCombiner(
                     audioFormat = extractor.getTrackFormat(trackIndex)
                     hasAudioFormat = true
                 } else {
-                    Log.e(TAG, "No audio track found in $videoPath")
+                    Log.e(TAG, "No audio track found in $it")
                 }
             }
             extractor.release()
             if (hasVideoFormat && hasAudioFormat) {
-                break
+                return@forEach
             }
         }
         // MediaMuxer 创建文件
@@ -102,19 +100,17 @@ class HwVideoCombiner(
         muxer?.start()
         // MediaExtractor 遍历读取帧，MediaMuxer 写入帧，并记录帧信息
         var ptsOffset = 0L
-        val trackIndex = videoList.iterator()
         var currentVideo = 0
         var combineResult = true
-        while (trackIndex.hasNext()) {
+        videoList.forEach {
             // 监听当前合并第几个视频
             combineListener?.onCombineProcessing(++currentVideo, videoList.size)
-            val videoPath = trackIndex.next()
             var hasVideo = false
             var hasAudio = false
             // 选择视频轨道
             val videoExtractor = MediaExtractor()
             try {
-                videoExtractor.setDataSource(videoPath)
+                videoExtractor.setDataSource(it)
             } catch (e: IOException) {
                 e.printStackTrace()
             }
@@ -126,7 +122,7 @@ class HwVideoCombiner(
             // 选择音频轨道
             val audioExtractor = MediaExtractor()
             try {
-                audioExtractor.setDataSource(videoPath)
+                audioExtractor.setDataSource(it)
             } catch (e: IOException) {
                 e.printStackTrace()
             }
@@ -140,7 +136,7 @@ class HwVideoCombiner(
                 combineResult = false
                 videoExtractor.release()
                 audioExtractor.release()
-                break
+                return@forEach
             }
             var presentationTimeUs: Long
             var audioPts = 0L
@@ -194,10 +190,10 @@ class HwVideoCombiner(
                     Log.d(
                         TAG, String.format(
                             "write sample track %d, size %d, pts %d flag %d",
-                            Integer.valueOf(outTrackIndex),
-                            Integer.valueOf(info.size),
-                            java.lang.Long.valueOf(info.presentationTimeUs),
-                            Integer.valueOf(info.flags)
+                            outTrackIndex,
+                            info.size,
+                            info.presentationTimeUs,
+                            info.flags
                         )
                     )
                     // 将读取到的数据写入文件
@@ -215,6 +211,7 @@ class HwVideoCombiner(
             // 释放资源
             videoExtractor.release()
             audioExtractor.release()
+
         }
         // 释放复用器
         try {

@@ -4,10 +4,15 @@ import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.*
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.gtbluesky.camera.MatrixCameraFragment
+import com.gtbluesky.camera.listener.OnZoomChangeListener
 import com.gtbluesky.camera.service.AudioRecordService
 import com.gtbluesky.mediamatrix.R
+import com.yanzhenjie.permission.AndPermission
+import com.yanzhenjie.permission.Permission
 import kotlinx.android.synthetic.main.activity_audio_record.*
 
 class AudioRecordActivity : AppCompatActivity() {
@@ -30,6 +35,16 @@ class AudioRecordActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_audio_record)
         setListener()
+        AndPermission
+            .with(this)
+            .runtime()
+            .permission(
+                Permission.Group.MICROPHONE,
+                Permission.Group.STORAGE
+            ).onDenied {
+                Toast.makeText(this, "请授予权限", Toast.LENGTH_SHORT).show()
+                finish()
+            }.start()
     }
 
     private fun setListener() {

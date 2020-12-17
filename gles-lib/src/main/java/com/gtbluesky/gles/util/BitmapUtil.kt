@@ -102,7 +102,7 @@ object BitmapUtil {
     @JvmStatic
     fun saveBitmap(
         filePath: String,
-        buffer: ByteBuffer,
+        buffer: ByteBuffer?,
         scale: Float = 1f,
         width: Int,
         height: Int,

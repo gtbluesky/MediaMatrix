@@ -1,6 +1,7 @@
 package com.gtbluesky.camera.render
 
 import android.content.Context
+import android.graphics.Rect
 import android.graphics.SurfaceTexture
 import android.os.Handler
 import android.os.HandlerThread
@@ -8,6 +9,7 @@ import android.view.Surface
 import android.view.SurfaceHolder
 import com.gtbluesky.camera.AspectRatioType
 import com.gtbluesky.camera.ResolutionType
+import com.gtbluesky.camera.entity.SnapInfoEntity
 
 class PreviewRenderer(private val context: Context) {
     private var renderThread: HandlerThread
@@ -112,9 +114,21 @@ class PreviewRenderer(private val context: Context) {
             sendMessage(
                 obtainMessage(
                     RenderHandler.MSG_TAKE_PICTURE,
-                    rotation,
-                    rotation,
-                    filePath
+                    SnapInfoEntity(
+                        filePath,
+                        rotation
+                    )
+                )
+            )
+        }
+    }
+
+    fun takePicture(snapInfoEntity: SnapInfoEntity) {
+        renderHandler.apply {
+            sendMessage(
+                obtainMessage(
+                    RenderHandler.MSG_TAKE_PICTURE,
+                    snapInfoEntity
                 )
             )
         }

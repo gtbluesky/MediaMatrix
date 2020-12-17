@@ -49,4 +49,28 @@ class OESInputFilter :
         }
         GLES30.glUniformMatrix4fv(transformMatrixHandle, 1, false, transformMatrix, 0)
     }
+
+    override fun adjustMvpMatrix() {
+        if (textureWidth.toFloat() / textureHeight > frameWidth.toFloat() / frameHeight) {
+            val heightScale = textureHeight.toFloat() / frameHeight
+            Matrix.orthoM(
+                mvpMatrix,
+                0,
+                -frameWidth * heightScale / textureWidth,
+                frameWidth * heightScale / textureWidth,
+                -1f, 1f,
+                0f, 1f
+            )
+        } else {
+            val widthScale = textureWidth.toFloat() / frameWidth
+            Matrix.orthoM(
+                mvpMatrix,
+                0,
+                -1f, 1f,
+                -frameHeight * widthScale / textureHeight,
+                frameHeight * widthScale / textureHeight,
+                0f, 1f
+            )
+        }
+    }
 }
