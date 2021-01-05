@@ -1,35 +1,28 @@
 package com.gtbluesky.mediamatrix.activity
 
 import android.graphics.Color
-import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.os.SystemClock
 import android.view.View
 import android.view.WindowManager
-import android.widget.Chronometer
-import android.widget.ImageView
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.gtbluesky.camera.AspectRatioType
 import com.gtbluesky.camera.MatrixCameraFragment
 import com.gtbluesky.camera.ResolutionType
+import com.gtbluesky.camera.listener.OnCompletionListener
 import com.gtbluesky.camera.listener.OnZoomChangeListener
 import com.gtbluesky.mediamatrix.R
+import com.gtbluesky.mediamatrix.databinding.ActivityCameraPreviewBinding
 import com.yanzhenjie.permission.AndPermission
 import com.yanzhenjie.permission.Permission
 
 class CameraPreviewActivity : AppCompatActivity() {
 
-    private lateinit var chronometer: Chronometer
-    private lateinit var switchIv: ImageView
-    private lateinit var flashIv: ImageView
-    private lateinit var recordIv: ImageView
-    private lateinit var zoomTv: TextView
-    private lateinit var beautyIv: ImageView
-    private lateinit var matrixCameraFragment: MatrixCameraFragment
+    private lateinit var binding: ActivityCameraPreviewBinding
+    private lateinit var cameraFragment: MatrixCameraFragment
 
     companion object {
         private const val FRAGMENT_CAMERA = "fragment_camera"
@@ -37,8 +30,10 @@ class CameraPreviewActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_camera_preview)
-        initView()
+        binding = ActivityCameraPreviewBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        binding.recordIv.drawable.level = 1
+        binding.beautyIv.alpha = 0.5f
         setListener()
         openCamera()
     }
@@ -57,16 +52,26 @@ class CameraPreviewActivity : AppCompatActivity() {
                 Permission.Group.MICROPHONE,
                 Permission.Group.STORAGE
             ).onGranted {
-                MatrixCameraFragment.newInstance(previewNow = true).let {
-                    matrixCameraFragment = it
-                    it.setResolution(ResolutionType.R_540, AspectRatioType.FULL)
+                val bundle = Bundle().also {
+                    it.putBoolean(MatrixCameraFragment.PREVIEW_NOW, true)
+                }
+                MatrixCameraFragment.newInstance(bundle).let {
+                    cameraFragment = it
+                    it.setResolution(ResolutionType.R_720, AspectRatioType.FULL)
                     it.onZoomChangeListener = object : OnZoomChangeListener {
                         override fun onZoomChange(scale: Float, completed: Boolean) {
-                            zoomTv.text = "${String.format("%.1f", scale)}X"
-                            zoomTv.visibility = if (completed) {
+                            binding.tvZoom.text = "${String.format("%.1f", scale)}X"
+                            binding.tvZoom.visibility = if (completed) {
                                 View.GONE
                             } else {
                                 View.VISIBLE
+                            }
+                        }
+                    }
+                    it.onCompletionListener = object : OnCompletionListener {
+                        override fun onCompletion(savePath: String) {
+                            runOnUiThread {
+                                Toast.makeText(this@CameraPreviewActivity, "文件路径为：$savePath", Toast.LENGTH_SHORT).show()
                             }
                         }
                     }
@@ -99,17 +104,6 @@ class CameraPreviewActivity : AppCompatActivity() {
 
     }
 
-    private fun initView() {
-        chronometer = findViewById(R.id.chronometer)
-        switchIv = findViewById(R.id.switch_iv)
-        flashIv = findViewById(R.id.flash_iv)
-        recordIv = findViewById(R.id.record_iv)
-        recordIv.drawable.level = 1
-        zoomTv = findViewById(R.id.tv_zoom)
-        beautyIv = findViewById(R.id.beauty_tv)
-        beautyIv.alpha = 0.5f
-    }
-
     private fun setFullScreen() {
         // 刘海屏处理
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -126,21 +120,21 @@ class CameraPreviewActivity : AppCompatActivity() {
     }
 
     private fun setListener() {
-        switchIv.setOnClickListener {
-            matrixCameraFragment.switchCamera()
+        binding.switchIv.setOnClickListener {
+            cameraFragment.switchCamera()
         }
-        flashIv.setOnClickListener {
-            matrixCameraFragment.toggleTorch()
+        binding.flashIv.setOnClickListener {
+            cameraFragment.toggleTorch()
         }
-        recordIv.setOnClickListener {
-            if (recordIv.drawable.level == 1) {
+        binding.recordIv.setOnClickListener {
+            if (binding.recordIv.drawable.level == 1) {
                 takePicture()
             } else {
                 stopRecord()
             }
         }
-        recordIv.setOnLongClickListener {
-            if (recordIv.drawable.level == 1) {
+        binding.recordIv.setOnLongClickListener {
+            if (binding.recordIv.drawable.level == 1) {
                 startRecord()
             }
             true
@@ -150,45 +144,45 @@ class CameraPreviewActivity : AppCompatActivity() {
 //                showToast("$success")
 //            }
 //        }
-        beautyIv.setOnClickListener {
+        binding.beautyIv.setOnClickListener {
             if (it.alpha != 1f) {
-                matrixCameraFragment.setBeautyFilter(true)
+                cameraFragment.setBeautyFilter(true)
                 it.alpha = 1f
             } else {
-                matrixCameraFragment.setBeautyFilter(false)
+                cameraFragment.setBeautyFilter(false)
                 it.alpha = 0.5f
             }
         }
     }
 
     private fun takePicture() {
-        matrixCameraFragment.takePicture(
-            "${Environment.getExternalStorageDirectory().absolutePath}/pic_${System.currentTimeMillis()}.jpg"
+        cameraFragment.takePicture(
+            Environment.getExternalStorageDirectory().absolutePath
         )
         showToast("照片已保存")
     }
 
     private fun startRecord() {
         showToast("开始录像")
-        recordIv.drawable.level = 2
-        chronometer.let {
+        binding.recordIv.drawable.level = 2
+        binding.chronometer.let {
             it.base = SystemClock.elapsedRealtime()
             it.start()
             it.setTextColor(Color.RED)
         }
-        matrixCameraFragment.startRecording(
-            "${Environment.getExternalStorageDirectory().absolutePath}/vod_${System.currentTimeMillis()}.mp4"
+        cameraFragment.startRecording(
+            Environment.getExternalStorageDirectory().absolutePath
         )
     }
 
     private fun stopRecord() {
-        recordIv.drawable.level = 1
-        chronometer.let {
+        binding.recordIv.drawable.level = 1
+        binding.chronometer.let {
             it.base = SystemClock.elapsedRealtime()
             it.stop()
             it.setTextColor(Color.WHITE)
         }
-        matrixCameraFragment.stopRecording()
+        cameraFragment.stopRecording()
         showToast("视频已保存")
     }
 

@@ -56,10 +56,7 @@ class EglCore @JvmOverloads constructor(sharedContext: EGLContext? = null, flags
             "EGL already set up"
         }
 
-        var sharedEglContext = sharedContext
-        if (sharedEglContext == null) {
-            sharedEglContext = EGL14.EGL_NO_CONTEXT
-        }
+        val sharedEglContext = sharedContext ?: EGL14.EGL_NO_CONTEXT
 
         eglDisplay = EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY)
         check(eglDisplay != EGL14.EGL_NO_DISPLAY) {

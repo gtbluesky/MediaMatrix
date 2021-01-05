@@ -71,13 +71,12 @@
         android:background="#7f000000">
 
         <ImageView
-            android:id="@+id/beauty_tv"
+            android:id="@+id/beauty_iv"
             android:layout_width="30dp"
             android:layout_height="30dp"
             android:layout_centerVertical="true"
             android:layout_marginLeft="10dp"
             android:src="@drawable/camera_icon_beauty_on" />
-
 
         <ImageView
             android:id="@+id/record_iv"

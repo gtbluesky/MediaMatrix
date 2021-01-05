@@ -1,4 +1,4 @@
-package com.gtbluesky.codec
+package com.gtbluesky.camera.codec
 
 import android.media.MediaCodec
 import android.media.MediaCodecInfo
@@ -12,6 +12,7 @@ import android.os.Looper
 import android.os.Message
 import android.util.Log
 import android.view.Surface
+import com.gtbluesky.camera.codec.HwEncoder
 import com.gtbluesky.gles.constant.FilterConstant
 import com.gtbluesky.gles.egl.EglCore
 import com.gtbluesky.gles.egl.WindowSurface
@@ -158,7 +159,6 @@ class HwVideoHandler(
                             // The codec config data was pulled out and fed to the muxer when we got
                             // the INFO_OUTPUT_FORMAT_CHANGED status.  Ignore it.
                             Log.d(TAG, "ignoring BUFFER_FLAG_CODEC_CONFIG")
-//                        it.outputFormat.setByteBuffer("csd-0", encodedBuffer)
                             videoBufferInfo.size = 0
                         }
                         if (videoBufferInfo.size > 0 && encoder.muxerStarted) {

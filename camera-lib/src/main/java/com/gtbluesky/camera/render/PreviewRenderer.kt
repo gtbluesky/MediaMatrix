@@ -10,10 +10,11 @@ import android.view.SurfaceHolder
 import com.gtbluesky.camera.AspectRatioType
 import com.gtbluesky.camera.ResolutionType
 import com.gtbluesky.camera.entity.SnapInfoEntity
+import com.gtbluesky.camera.listener.OnCompletionListener
 
 class PreviewRenderer(private val context: Context) {
     private var renderThread: HandlerThread
-    private var renderHandler: Handler
+    private val renderHandler: RenderHandler
 
     init {
         renderThread = HandlerThread("Java Render Thread")
@@ -22,6 +23,11 @@ class PreviewRenderer(private val context: Context) {
                 renderHandler = RenderHandler(context, looper)
             }
     }
+
+    fun setOnCompletionListener(onCompletionListener: OnCompletionListener?) {
+        renderHandler.onCompletionListener = onCompletionListener
+    }
+
 
     fun bindSurface(surface: Surface) {
         renderHandler.apply {

@@ -1,7 +1,6 @@
 package com.gtbluesky.camera.render
 
 import android.content.Context
-import android.graphics.Rect
 import android.graphics.SurfaceTexture
 import android.opengl.GLES30
 import android.os.Handler
@@ -13,11 +12,12 @@ import android.view.SurfaceHolder
 import com.gtbluesky.camera.AspectRatioType
 import com.gtbluesky.camera.CameraParam
 import com.gtbluesky.camera.ResolutionType
+import com.gtbluesky.camera.codec.CodecParam
 import com.gtbluesky.camera.engine.CameraEngine
 import com.gtbluesky.camera.entity.SnapInfoEntity
 import com.gtbluesky.camera.listener.OnCaptureFrameListener
-import com.gtbluesky.codec.CodecParam
-import com.gtbluesky.codec.HwEncoder
+import com.gtbluesky.camera.codec.HwEncoder
+import com.gtbluesky.camera.listener.OnCompletionListener
 import com.gtbluesky.gles.egl.EglCore
 import com.gtbluesky.gles.egl.WindowSurface
 import com.gtbluesky.gles.util.BitmapUtil
@@ -40,6 +40,7 @@ class RenderHandler(private val context: Context, looper: Looper) :
     private var onCaptureFrameListener: OnCaptureFrameListener? = null
     private var isSnapping = false
     private var snapInfoEntity: SnapInfoEntity? = null
+    var onCompletionListener: OnCompletionListener? = null
 
     companion object {
         private val TAG = RenderHandler::class.java.simpleName
@@ -171,7 +172,6 @@ class RenderHandler(private val context: Context, looper: Looper) :
             it.setOnFrameAvailableListener(this)
             CameraEngine.getInstance().startPreview(context, it)
         }
-
     }
 
     private fun handleSurfaceCreated(surfaceTexture: SurfaceTexture) {
@@ -234,6 +234,9 @@ class RenderHandler(private val context: Context, looper: Looper) :
                         snapInfoEntity?.clipRect?.width() ?: getWidth(),
                         snapInfoEntity?.clipRect?.height() ?: getHeight()
                     )
+                    snapInfoEntity?.let {
+                        onCompletionListener?.onCompletion(it.filePath)
+                    }
                 }
                 isSnapping = false
                 onCaptureFrameListener = null
@@ -259,6 +262,7 @@ class RenderHandler(private val context: Context, looper: Looper) :
             if (encoder == null) {
                 encoder = HwEncoder(rotation)
             }
+            encoder?.onCompletionListener = onCompletionListener
             encoder?.start(
                 it.eglContext,
                 filePath
@@ -268,6 +272,9 @@ class RenderHandler(private val context: Context, looper: Looper) :
     }
 
     private fun handleStopRecording() {
+        if (!isRecording) {
+            return
+        }
         isRecording = false
         encoder?.stop()
         encoder = null

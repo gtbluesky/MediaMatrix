@@ -1,4 +1,4 @@
-package com.gtbluesky.codec
+package com.gtbluesky.camera.codec
 
 class CodecParam private constructor() {
 

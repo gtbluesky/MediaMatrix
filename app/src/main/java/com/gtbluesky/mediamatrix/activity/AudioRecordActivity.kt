@@ -4,24 +4,33 @@ import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.*
-import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.gtbluesky.camera.MatrixCameraFragment
-import com.gtbluesky.camera.listener.OnZoomChangeListener
+import com.gtbluesky.camera.listener.OnCompletionListener
 import com.gtbluesky.camera.service.AudioRecordService
-import com.gtbluesky.mediamatrix.R
+import com.gtbluesky.mediamatrix.databinding.ActivityAudioRecordBinding
 import com.yanzhenjie.permission.AndPermission
 import com.yanzhenjie.permission.Permission
-import kotlinx.android.synthetic.main.activity_audio_record.*
 
 class AudioRecordActivity : AppCompatActivity() {
     private var audioService: AudioRecordService? = null
+    private lateinit var binding: ActivityAudioRecordBinding
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             audioService = (service as? AudioRecordService.AudioRecordBinder)?.getService()?.also {
                 if (it.getDuration() != 0L) {
-                    tv_time.text = "状态：${it.getState()}，时长：${it.getDuration() / 1000f}ms"
+                    binding.tvTime.text = "状态：${it.getState()}，时长：${it.getDuration() / 1000f}ms"
+                }
+                it.onCompletionListener = object : OnCompletionListener {
+                    override fun onCompletion(savePath: String) {
+                        runOnUiThread {
+                            Toast.makeText(
+                                this@AudioRecordActivity,
+                                "文件路径为：$savePath",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
                 }
             }
         }
@@ -31,9 +40,11 @@ class AudioRecordActivity : AppCompatActivity() {
         }
 
     }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_audio_record)
+        binding = ActivityAudioRecordBinding.inflate(layoutInflater)
+        setContentView(binding.root)
         setListener()
         AndPermission
             .with(this)
@@ -48,25 +59,25 @@ class AudioRecordActivity : AppCompatActivity() {
     }
 
     private fun setListener() {
-        tv_start.setOnClickListener {
+        binding.tvStart.setOnClickListener {
             if (audioService?.getDuration() == 0L) {
                 audioService?.startRecord(Environment.getExternalStorageDirectory().absolutePath)
             }
-            tv_start.text = "进行中"
+            binding.tvStart.text = "进行中"
         }
-        tv_stop.setOnClickListener {
+        binding.tvStop.setOnClickListener {
             audioService?.stopRecord()
             Toast.makeText(this, "已停止", Toast.LENGTH_SHORT).show()
         }
-        tv_time.setOnClickListener {
+        binding.tvTime.setOnClickListener {
             audioService?.let {
-                tv_time.text = "状态：${it.getState()}，时长：${it.getDuration() / 1000f}ms"
+                binding.tvTime.text = "状态：${it.getState()}，时长：${it.getDuration() / 1000f}ms"
             }
         }
-        tv_pause.setOnClickListener {
+        binding.tvPause.setOnClickListener {
             audioService?.pauseRecord()
         }
-        tv_resume.setOnClickListener {
+        binding.tvResume.setOnClickListener {
             audioService?.resumeRecord()
         }
     }

@@ -2,8 +2,8 @@ package com.gtbluesky.camera
 
 import android.hardware.Camera
 import android.util.Log
+import com.gtbluesky.camera.codec.CodecParam
 import com.gtbluesky.camera.listener.OnCameraFocusListener
-import com.gtbluesky.codec.CodecParam
 import java.util.*
 import kotlin.math.sign
 

@@ -1,4 +1,4 @@
-package com.gtbluesky.codec
+package com.gtbluesky.camera.codec.transcode
 
 import android.media.MediaCodec
 import android.media.MediaExtractor
@@ -8,6 +8,7 @@ import android.os.Looper
 import android.util.Log
 import java.io.IOException
 import java.nio.ByteBuffer
+import kotlin.math.max
 
 /**
  * 基于 MediaExtractor + MediaMuxer 实现
@@ -19,22 +20,18 @@ class HwVideoCombiner(
 ) {
 
     private var muxer: MediaMuxer? = null
-    private var readBuf: ByteBuffer
-    private var outAudioTrackIndex =
-        INVALID_TRACK_INDEX
-    private var outVideoTrackIndex =
-        INVALID_TRACK_INDEX
+    private val readBuf: ByteBuffer by lazy {
+        ByteBuffer.allocate(MAX_BUFFER_SIZE)
+    }
+    private var outAudioTrackIndex = INVALID_TRACK_INDEX
+    private var outVideoTrackIndex = INVALID_TRACK_INDEX
     private var audioFormat: MediaFormat? = null
     private var videoFormat: MediaFormat? = null
 
     companion object {
-        private val TAG = HwVideoCombiner::class.java.simpleName
+        private val TAG = this::class.java.simpleName
         private const val INVALID_TRACK_INDEX = -1
         private const val MAX_BUFFER_SIZE = 1 shl 20
-    }
-
-    init {
-        readBuf = ByteBuffer.allocate(MAX_BUFFER_SIZE)
     }
 
     fun combine() {
@@ -147,6 +144,7 @@ class HwVideoCombiner(
                 var outTrackIndex: Int
                 var extractor: MediaExtractor
                 var currentTrackIndex: Int
+                // 音视频交替读取
                 if ((!hasVideoData || audioPts - videoPts <= 50000L) && hasAudioData) {
                     currentTrackIndex = inAudioTrackIndex
                     outTrackIndex = outAudioTrackIndex
@@ -202,7 +200,7 @@ class HwVideoCombiner(
                 }
             }
             // 当前文件最后一帧的PTS，用作下一个视频的PTS
-            ptsOffset += if (videoPts > audioPts) videoPts else audioPts
+            ptsOffset += max(videoPts, audioPts)
             // 当前文件最后一帧和下一帧的间隔差40ms，默认录制25fps的视频，帧间隔时间就是40ms
             // 但由于使用MediaCodec录制完之后，后面又写入了一个OES的帧，导致前面解析的时候会有时间差
             // 这里设置10ms效果比40ms的要好些。
@@ -211,7 +209,6 @@ class HwVideoCombiner(
             // 释放资源
             videoExtractor.release()
             audioExtractor.release()
-
         }
         // 释放复用器
         try {

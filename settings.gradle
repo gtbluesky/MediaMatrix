@@ -1,5 +1,4 @@
 include ':app'
 include ':camera-lib'
 include ':gles-lib'
-include ':codec-lib'
 include ':player-lib'

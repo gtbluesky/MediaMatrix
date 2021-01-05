@@ -1,8 +1,9 @@
-package com.gtbluesky.codec
+package com.gtbluesky.camera.codec
 
 import android.media.*
 import android.opengl.EGLContext
 import android.os.HandlerThread
+import com.gtbluesky.camera.listener.OnCompletionListener
 import java.io.IOException
 
 /**
@@ -16,7 +17,6 @@ class HwEncoder(private val rotation: Int) {
     @Volatile var audioTrackIndex = INVALID_TRACK_INDEX
     var muxerStarted = false
     val muxerLock = Object()
-    private var isEncoding = false
     private var startTimeUs = 0L
     var duration = 0L
         private set
@@ -29,6 +29,9 @@ class HwEncoder(private val rotation: Int) {
     // 音频编码线程
     private var audioEncodeThread: HandlerThread? = null
     private var audioHandler: HwAudioHandler? = null
+
+    var onCompletionListener: OnCompletionListener? = null
+    private lateinit var savePath: String
 
     companion object {
         const val INVALID_TRACK_INDEX = -1
@@ -72,6 +75,7 @@ class HwEncoder(private val rotation: Int) {
         eglContext: EGLContext,
         filePath: String
     ) {
+        savePath = filePath
         createMuxer(filePath)
         videoHandler?.apply {
             sendMessage(
@@ -114,6 +118,7 @@ class HwEncoder(private val rotation: Int) {
                 release()
             }
             mediaMuxer = null
+            onCompletionListener?.onCompletion(savePath)
         }.start()
     }
 

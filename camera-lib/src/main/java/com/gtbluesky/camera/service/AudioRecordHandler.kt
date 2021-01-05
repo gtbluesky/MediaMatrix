@@ -6,9 +6,9 @@ import android.media.MediaRecorder
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
-import android.util.Log
-import com.gtbluesky.codec.CodecParam
-import com.gtbluesky.codec.CodecUtil
+import com.gtbluesky.camera.codec.CodecParam
+import com.gtbluesky.camera.codec.CodecUtil
+import com.gtbluesky.camera.listener.OnCompletionListener
 import java.io.File
 import java.io.FileOutputStream
 
@@ -22,6 +22,7 @@ class AudioRecordHandler(looper: Looper) : Handler(looper) {
         private set
     private var totalReadedBytes = 0
     var state = RecordState.PENDING
+    var onCompletionListener: OnCompletionListener? = null
 
     companion object {
         const val MSG_START = 0x1
@@ -32,7 +33,6 @@ class AudioRecordHandler(looper: Looper) : Handler(looper) {
         const val MSG_RESUME = 0x6
 
         private const val SAMPLE_RATE = 44100
-        private val TAG = this::class.simpleName
     }
 
     init {
@@ -78,13 +78,12 @@ class AudioRecordHandler(looper: Looper) : Handler(looper) {
             return
         }
         val dir = File(path)
-        if (!dir.exists() || !dir.isDirectory) {
-            Log.e(TAG, "start error caused by using a incorrect directory path")
-            return
+        if (dir.exists()) {
+            dir.delete()
         }
         audioRecord?.startRecording()
         state = RecordState.ONGOING
-        savePath = dir.absolutePath + File.separator + "audio_${System.currentTimeMillis()}"
+        savePath = path
         fos = FileOutputStream(File("$savePath.pcm"))
         sendMessage(obtainMessage(MSG_RECORDING))
     }
@@ -96,8 +95,7 @@ class AudioRecordHandler(looper: Looper) : Handler(looper) {
         if (endOfStream) {
             removeMessages(MSG_RECORDING)
             audioRecord?.stop()
-            while (!drainAudioData()) {
-            }
+            while (!drainAudioData()) {}
             audioRecord?.release()
             audioRecord = null
             fos?.close()
@@ -112,6 +110,7 @@ class AudioRecordHandler(looper: Looper) : Handler(looper) {
                 minBufferSize
             )
             File("$savePath.pcm").delete()
+            onCompletionListener?.onCompletion("$savePath.wav")
             sendMessage(obtainMessage(MSG_QUIT))
         } else {
             drainAudioData()

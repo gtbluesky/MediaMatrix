@@ -1,5 +1,6 @@
 package com.gtbluesky.camera
 
+import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Point
 import android.graphics.Rect
@@ -13,10 +14,12 @@ import com.gtbluesky.camera.controller.OrientationController
 import com.gtbluesky.camera.controller.SensorController
 import com.gtbluesky.camera.engine.CameraEngine
 import com.gtbluesky.camera.entity.SnapInfoEntity
+import com.gtbluesky.camera.listener.OnCompletionListener
 import com.gtbluesky.camera.listener.OnRotationChangeListener
 import com.gtbluesky.camera.listener.OnZoomChangeListener
 import com.gtbluesky.camera.listener.StartFocusCallback
 import com.gtbluesky.camera.render.PreviewRenderer
+import java.io.File
 
 class MatrixCameraFragment : Fragment() {
 
@@ -32,6 +35,7 @@ class MatrixCameraFragment : Fragment() {
     }
     private var minSpan = 0f
     var onZoomChangeListener: OnZoomChangeListener? = null
+    var onCompletionListener: OnCompletionListener? = null
 
     var torchOn = false
         private set
@@ -60,15 +64,23 @@ class MatrixCameraFragment : Fragment() {
     }
 
     companion object {
+        const val PREVIEW_NOW = "PREVIEW_NOW"
+
         @JvmStatic
-        fun newInstance(bundle: Bundle? = null, previewNow: Boolean = false): MatrixCameraFragment {
-            val fragment = MatrixCameraFragment().also {
-                it.previewNow = previewNow
-            }
+        @JvmOverloads
+        fun newInstance(bundle: Bundle? = null): MatrixCameraFragment {
+            val fragment = MatrixCameraFragment()
             bundle?.let {
                 fragment.arguments = it
             }
             return fragment
+        }
+    }
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        arguments?.let {
+            previewNow = it.getBoolean(PREVIEW_NOW)
         }
     }
 
@@ -89,6 +101,7 @@ class MatrixCameraFragment : Fragment() {
     private fun initCameraView() {
         context?.let {
             previewRenderer = PreviewRenderer(it)
+            previewRenderer?.setOnCompletionListener(onCompletionListener)
             TextureView(it).also {
                 it.surfaceTextureListener = object : TextureView.SurfaceTextureListener {
                     override fun onSurfaceTextureAvailable(
@@ -104,7 +117,7 @@ class MatrixCameraFragment : Fragment() {
                     }
 
                     override fun onSurfaceTextureSizeChanged(
-                        surface: SurfaceTexture?,
+                        surface: SurfaceTexture,
                         width: Int,
                         height: Int
                     ) {
@@ -112,12 +125,13 @@ class MatrixCameraFragment : Fragment() {
                         previewRenderer?.changePreviewSize()
                     }
 
-                    override fun onSurfaceTextureDestroyed(surface: SurfaceTexture?): Boolean {
+                    override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
+                        stopRecording()
                         previewRenderer?.unBindSurface()
                         return true
                     }
 
-                    override fun onSurfaceTextureUpdated(surface: SurfaceTexture?) {}
+                    override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {}
                 }
                 contentView.addView(it)
                 contentView.setOnTouchListener { _, event ->
@@ -226,7 +240,16 @@ class MatrixCameraFragment : Fragment() {
     /**
      * 只在竖屏模式下可设置useRotation=true
      */
-    fun takePicture(filePath: String, clipRect: Rect? = null, useRotation: Boolean = false) {
+    @JvmOverloads
+    fun takePicture(dirPath: String, fileName: String = "pic_${System.currentTimeMillis()}.jpg", clipRect: Rect? = null, useRotation: Boolean = false) {
+        val dir = if (dirPath.endsWith(File.separator)) dirPath.substring(0, dirPath.length - 1) else dirPath
+        val name = if (fileName.startsWith(File.separator)) fileName.substring(1) else fileName
+        File(dir).let {
+            if (!it.exists() || !it.isDirectory) {
+                return
+            }
+        }
+        val filePath = "${dir}${File.separator}${name}"
         previewRenderer?.takePicture(
             SnapInfoEntity(
                 filePath, if (useRotation) {
@@ -242,7 +265,16 @@ class MatrixCameraFragment : Fragment() {
     /**
      * 只在竖屏模式下可设置useRotation=true
      */
-    fun startRecording(filePath: String, useRotation: Boolean = false) {
+    @JvmOverloads
+    fun startRecording(dirPath: String, fileName: String = "vod_${System.currentTimeMillis()}.mp4", useRotation: Boolean = false) {
+        val dir = if (dirPath.endsWith(File.separator)) dirPath.substring(0, dirPath.length - 1) else dirPath
+        val name = if (fileName.startsWith(File.separator)) fileName.substring(1) else fileName
+        File(dir).let {
+            if (!it.exists() || !it.isDirectory) {
+                return
+            }
+        }
+        val filePath = "${dir}${File.separator}${name}"
         previewRenderer?.startRecording(
             filePath, if (useRotation) {
                 rotation

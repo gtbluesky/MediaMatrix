@@ -121,7 +121,7 @@ object BitmapUtil {
                 }
                 handleBitmapWithMatrix(it, matrix)
             }.let {
-                it.compress(Bitmap.CompressFormat.JPEG, 100, bos)
+                it.compress(Bitmap.CompressFormat.JPEG, 80, bos)
                 it.recycle()
             }
         } catch (e: FileNotFoundException) {

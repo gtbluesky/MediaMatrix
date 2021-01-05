@@ -1,10 +1,11 @@
-package com.gtbluesky.codec
+package com.gtbluesky.camera.codec
 
 import android.media.*
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
 import android.util.Log
+import com.gtbluesky.camera.codec.HwEncoder
 import java.io.IOException
 
 class HwAudioHandler(
