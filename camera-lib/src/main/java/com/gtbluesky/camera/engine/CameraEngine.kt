@@ -54,8 +54,8 @@ class CameraEngine private constructor() {
 
     private fun closeCamera() {
         isPreviewing = false
+        stopPreview()
         camera?.apply {
-            stopPreview()
             setPreviewCallback(null)
             release()
         }
@@ -73,15 +73,23 @@ class CameraEngine private constructor() {
         surfaceTexture: SurfaceTexture
     ) {
         openCamera()
-        camera?.apply {
-            setPreviewTexture(surfaceTexture)
-            setDisplayOrientation(getCameraDisplayOrientation(context))
-            startPreview()
+        try {
+            camera?.apply {
+                setPreviewTexture(surfaceTexture)
+                setDisplayOrientation(getCameraDisplayOrientation(context))
+                startPreview()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
     fun stopPreview() {
-        camera?.stopPreview()
+        try {
+            camera?.stopPreview()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     fun destroy() {
@@ -100,9 +108,21 @@ class CameraEngine private constructor() {
         cameraParams?.supportedFocusModes?.let {
             if (Camera.Parameters.FOCUS_MODE_AUTO !in it) {
                 Log.e(TAG, "FOCUS_MODE_AUTO isn't supported")
-                camera?.parameters = cameraParams
+                try {
+                    camera?.parameters = cameraParams
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
                 return
             }
+        }
+        val fpsRange = IntArray(2)
+        cameraParams?.getPreviewFpsRange(fpsRange)
+        Log.e(TAG, "fps range ${fpsRange[0]} to ${fpsRange[1]}")
+        if (fpsRange[1] > 30 * 1000) {
+            cameraParams?.setPreviewFpsRange(30000, 30000)
+        } else {
+            cameraParams?.setPreviewFpsRange(fpsRange[1], fpsRange[1])
         }
         cameraParams?.focusMode = Camera.Parameters.FOCUS_MODE_AUTO
         val supportCustomFocus = cameraParams?.maxNumFocusAreas?.let {
@@ -162,7 +182,11 @@ class CameraEngine private constructor() {
         cameraParams?.flashMode =
             if (toggle) Camera.Parameters.FLASH_MODE_TORCH
             else Camera.Parameters.FLASH_MODE_OFF
-        camera?.parameters = cameraParams
+        try {
+            camera?.parameters = cameraParams
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     fun changeResolution(
@@ -182,12 +206,13 @@ class CameraEngine private constructor() {
         }
     }
 
-    fun isFlashSupported(): Boolean {
+    private fun isFlashSupported(): Boolean {
         val cameraParams = getCameraParams()
         val supportedFlashModes = cameraParams?.supportedFlashModes
         return (supportedFlashModes != null
                 && supportedFlashModes.isNotEmpty()
-                && Camera.Parameters.FLASH_MODE_TORCH in supportedFlashModes)
+                && Camera.Parameters.FLASH_MODE_TORCH in supportedFlashModes
+                && Camera.Parameters.FLASH_MODE_OFF in supportedFlashModes)
     }
 
     fun changeZoom(scale: Float): Float {
@@ -196,7 +221,11 @@ class CameraEngine private constructor() {
         if (cameraParams?.isZoomSupported == true) {
             index = getZoomRatioIndex(scale)
             cameraParams.zoom = index
-            camera?.parameters = cameraParams
+            try {
+                camera?.parameters = cameraParams
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         } else {
             Log.e(TAG, "This device doesn't support zoom")
         }
@@ -224,19 +253,24 @@ class CameraEngine private constructor() {
     }
 
     private fun getCameraParams(): Camera.Parameters? {
-        return when (cameraParam.cameraId) {
-            CameraParam.FRONT_CAMERA_ID -> {
-                if (frontParams == null) {
-                    frontParams = camera?.parameters
+        return try {
+            when (cameraParam.cameraId) {
+                CameraParam.FRONT_CAMERA_ID -> {
+                    if (frontParams == null) {
+                        frontParams = camera?.parameters
+                    }
+                    frontParams
                 }
-                frontParams
-            }
-            else -> {
-                if (backParams == null) {
-                    backParams = camera?.parameters
+                else -> {
+                    if (backParams == null) {
+                        backParams = camera?.parameters
+                    }
+                    backParams
                 }
-                backParams
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
     }
 
