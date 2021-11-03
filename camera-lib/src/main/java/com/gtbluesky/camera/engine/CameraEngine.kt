@@ -11,6 +11,8 @@ import android.view.Surface
 import com.gtbluesky.camera.AspectRatioType
 import com.gtbluesky.camera.CameraParam
 import com.gtbluesky.camera.ResolutionType
+import java.lang.RuntimeException
+import kotlin.jvm.Throws
 
 class CameraEngine private constructor() {
     private var camera: Camera? = null
@@ -39,6 +41,7 @@ class CameraEngine private constructor() {
         fun getInstance() = CameraEngineHolder.holder
     }
 
+    @Throws(RuntimeException::class)
     private fun openCamera() {
         camera = Camera.open(cameraParam.cameraId)
         getCameraParams()?.apply {
@@ -72,8 +75,8 @@ class CameraEngine private constructor() {
         context: Context,
         surfaceTexture: SurfaceTexture
     ) {
-        openCamera()
         try {
+            openCamera()
             camera?.apply {
                 setPreviewTexture(surfaceTexture)
                 setDisplayOrientation(getCameraDisplayOrientation(context))
