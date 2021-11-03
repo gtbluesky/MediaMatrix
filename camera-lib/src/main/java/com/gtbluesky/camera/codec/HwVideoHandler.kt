@@ -12,7 +12,6 @@ import android.os.Looper
 import android.os.Message
 import android.util.Log
 import android.view.Surface
-import com.gtbluesky.camera.codec.HwEncoder
 import com.gtbluesky.gles.constant.FilterConstant
 import com.gtbluesky.gles.egl.EglCore
 import com.gtbluesky.gles.egl.WindowSurface
@@ -20,6 +19,7 @@ import com.gtbluesky.gles.filter.NormalFilter
 import com.gtbluesky.gles.util.GLHelper
 import java.io.IOException
 import java.nio.FloatBuffer
+import java.util.concurrent.TimeUnit
 
 class HwVideoHandler(
     looper: Looper,
@@ -42,7 +42,7 @@ class HwVideoHandler(
     }
     private var isEncoding = false
 
-    private var baseTimeStamo = -1L
+    private var baseTimeStampNs = -1L
 
     private val codecParam = CodecParam.getInstance()
 
@@ -239,8 +239,8 @@ class HwVideoHandler(
     private fun drawFrame(textureId: Int, timeStamp: Long) {
         windowSurface?.makeCurrent()
         recordFilter.drawFrame(textureId, vertexBuffer, textureBuffer)
-        ((System.nanoTime() - baseTimeStamo) / codecParam.speed).toLong().let {
-            Log.d(TAG, "presentationTime(Us)：$it, presentationTime(s):  ${it / 1000000f}")
+        ((System.nanoTime() - baseTimeStampNs) / codecParam.speed).toLong().let {
+            Log.d(TAG, "presentationTime(ms):  ${TimeUnit.NANOSECONDS.toMillis(it)}")
             windowSurface?.setPresentationTime(it)
         }
         windowSurface?.swapBuffers()
@@ -252,7 +252,7 @@ class HwVideoHandler(
         eglContext: EGLContext,
         rotation: Int
     ) {
-        baseTimeStamo = System.nanoTime()
+        baseTimeStampNs = System.nanoTime()
         videoEncoder?.start()
         windowSurface?.apply {
             releaseEglSurface()

@@ -7,6 +7,7 @@ import android.os.Message
 import android.util.Log
 import com.gtbluesky.camera.codec.HwEncoder
 import java.io.IOException
+import java.util.concurrent.TimeUnit
 
 class HwAudioHandler(
     looper: Looper,
@@ -20,6 +21,7 @@ class HwAudioHandler(
     private var audioRecord: AudioRecord? = null
     private var presentationTimeUs = 0L
     private var totalReadedBytes = 0
+    private var baseTimeStampNs = -1L
 
     companion object {
         private val TAG = HwAudioHandler::class.java.simpleName
@@ -82,6 +84,7 @@ class HwAudioHandler(
     }
 
     private fun handleStart() {
+        baseTimeStampNs = System.nanoTime()
         audioRecord?.startRecording()
         audioEncoder?.start()
         isEncoding = true
@@ -116,6 +119,7 @@ class HwAudioHandler(
 
     private fun drainAudioData(): Boolean {
         audioEncoder?.let {
+            presentationTimeUs = TimeUnit.NANOSECONDS.toMicros(System.nanoTime() - baseTimeStampNs)
             val index = it.dequeueInputBuffer(0)
             if (index >= 0) {
                 var length = 0
@@ -132,9 +136,8 @@ class HwAudioHandler(
                         presentationTimeUs,
                         if (isEncoding) 0 else MediaCodec.BUFFER_FLAG_END_OF_STREAM
                     )
-                    presentationTimeUs =
-                        1000000L * totalReadedBytes / (codecParam.channelCount * 2 * codecParam.sampleRate)
-                    Log.d(TAG, "presentationTime(s):  ${presentationTimeUs / 1000000f}")
+                    Log.d(TAG, "presentationTime(ms):  ${TimeUnit.MICROSECONDS.toMillis(presentationTimeUs)}")
+//                    presentationTimeUs = 1000000L * totalReadedBytes / (codecParam.channelCount * 2 * codecParam.sampleRate)
                 }
             }
             var outIndex: Int

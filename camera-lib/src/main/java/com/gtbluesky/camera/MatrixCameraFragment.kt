@@ -241,8 +241,16 @@ class MatrixCameraFragment : Fragment() {
      * 只在竖屏模式下可设置useRotation=true
      */
     @JvmOverloads
-    fun takePicture(dirPath: String, fileName: String = "pic_${System.currentTimeMillis()}.jpg", clipRect: Rect? = null, useRotation: Boolean = false) {
-        val dir = if (dirPath.endsWith(File.separator)) dirPath.substring(0, dirPath.length - 1) else dirPath
+    fun takePicture(
+        dirPath: String,
+        fileName: String = "pic_${System.currentTimeMillis()}.jpg",
+        clipRect: Rect? = null,
+        useRotation: Boolean = false
+    ) {
+        val dir = if (dirPath.endsWith(File.separator)) dirPath.substring(
+            0,
+            dirPath.length - 1
+        ) else dirPath
         val name = if (fileName.startsWith(File.separator)) fileName.substring(1) else fileName
         File(dir).let {
             if (!it.exists() || !it.isDirectory) {
@@ -266,8 +274,15 @@ class MatrixCameraFragment : Fragment() {
      * 只在竖屏模式下可设置useRotation=true
      */
     @JvmOverloads
-    fun startRecording(dirPath: String, fileName: String = "vod_${System.currentTimeMillis()}.mp4", useRotation: Boolean = false) {
-        val dir = if (dirPath.endsWith(File.separator)) dirPath.substring(0, dirPath.length - 1) else dirPath
+    fun startRecording(
+        dirPath: String,
+        fileName: String = "vod_${System.currentTimeMillis()}.mp4",
+        useRotation: Boolean = false
+    ) {
+        val dir = if (dirPath.endsWith(File.separator)) dirPath.substring(
+            0,
+            dirPath.length - 1
+        ) else dirPath
         val name = if (fileName.startsWith(File.separator)) fileName.substring(1) else fileName
         File(dir).let {
             if (!it.exists() || !it.isDirectory) {

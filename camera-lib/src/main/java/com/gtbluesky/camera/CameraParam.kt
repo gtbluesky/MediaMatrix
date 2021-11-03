@@ -135,7 +135,7 @@ class CameraParam private constructor() {
             getOptimalSize(
                 sizes,
                 expectHeight,
-                expectWidth,
+                expectWidth
             ).also {
                 previewWidth = it.width
                 previewHeight = it.height
@@ -144,7 +144,7 @@ class CameraParam private constructor() {
             getOptimalSize(
                 sizes,
                 expectWidth,
-                expectHeight,
+                expectHeight
             ).also {
                 previewWidth = it.height
                 previewHeight = it.width
