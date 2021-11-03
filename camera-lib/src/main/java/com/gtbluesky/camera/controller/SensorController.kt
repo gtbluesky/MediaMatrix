@@ -21,12 +21,10 @@ class SensorController(context: Context?) : SensorEventListener {
     private val sensorManager: SensorManager by lazy {
         context?.getSystemService(Context.SENSOR_SERVICE) as SensorManager
     }
-    private val sensor: Sensor by lazy {
-        sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
-    }
+    private val sensor: Sensor? = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
     companion object {
-        private const val DELEY_DURATION = 500
+        private const val DELAY_DURATION = 500
         private const val STATUS_NONE = 0
         private const val STATUS_STATIC = 1
         private const val STATUS_MOVE = 2
@@ -59,7 +57,7 @@ class SensorController(context: Context?) : SensorEventListener {
                     canFocusIn = true
                 }
                 if (canFocusIn) {
-                    if (stamp - lastTimeStamp > DELEY_DURATION) {
+                    if (stamp - lastTimeStamp > DELAY_DURATION) {
                         //移动后静止一段时间，可以发生对焦行为
                         canFocusIn = false
                         startFocusCallback?.onStart()
@@ -77,10 +75,14 @@ class SensorController(context: Context?) : SensorEventListener {
     }
 
     fun register() {
-        sensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_NORMAL)
+        sensor?.let {
+            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
+        }
     }
 
     fun unregister() {
-        sensorManager.unregisterListener(this, sensor)
+        sensor?.let {
+            sensorManager.unregisterListener(this, it)
+        }
     }
 }
