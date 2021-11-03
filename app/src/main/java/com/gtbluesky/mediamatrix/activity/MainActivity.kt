@@ -1,11 +1,8 @@
 package com.gtbluesky.mediamatrix.activity
 
 import android.content.Intent
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.view.*
-import android.widget.TextView
-import com.gtbluesky.mediamatrix.R
+import androidx.appcompat.app.AppCompatActivity
 import com.gtbluesky.mediamatrix.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
@@ -16,6 +13,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        val intent = Intent()
         binding.tvEgl.setOnClickListener {
             intent.setClass(this, EGLTestActivity::class.java)
             startActivity(intent)
@@ -42,6 +40,10 @@ class MainActivity : AppCompatActivity() {
         }
         binding.tvRecord.setOnClickListener {
             intent.setClass(this, AudioRecordActivity::class.java)
+            startActivity(intent)
+        }
+        binding.tvPlayer.setOnClickListener {
+            intent.setClass(this, PlayerActivity::class.java)
             startActivity(intent)
         }
     }

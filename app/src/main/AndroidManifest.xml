@@ -19,20 +19,26 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
         <activity android:name=".activity.EGLTestActivity" />
+
         <activity
             android:name=".activity.SkyBoxActivity"
             android:screenOrientation="portrait" />
+
         <activity
             android:name=".activity.SkySphereActivity"
             android:screenOrientation="portrait" />
+
         <activity
             android:name=".activity.ParticleEffectActivity"
             android:screenOrientation="portrait" />
+
         <activity
             android:name=".activity.CameraActivity"
             android:screenOrientation="portrait"
             android:theme="@style/NoActionBar" />
+
         <activity
             android:name=".activity.CameraPreviewActivity"
             android:screenOrientation="portrait"
@@ -43,8 +49,15 @@
             android:screenOrientation="landscape"
             android:theme="@style/NoActionBar" />
 
-        <activity android:name=".activity.AudioRecordActivity"
-            android:screenOrientation="portrait"/>
+        <activity
+            android:name=".activity.AudioRecordActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/NoActionBar" />
+
+        <activity
+            android:name=".activity.PlayerActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/NoActionBar" />
     </application>
 
 </manifest>

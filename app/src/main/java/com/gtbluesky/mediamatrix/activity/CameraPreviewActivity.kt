@@ -57,7 +57,7 @@ class CameraPreviewActivity : AppCompatActivity() {
                 }
                 MatrixCameraFragment.newInstance(bundle).let {
                     cameraFragment = it
-                    it.setResolution(ResolutionType.R_720, AspectRatioType.FULL)
+                    it.setResolution(ResolutionType.R_1080, AspectRatioType.FULL)
                     it.onZoomChangeListener = object : OnZoomChangeListener {
                         override fun onZoomChange(scale: Float, completed: Boolean) {
                             binding.tvZoom.text = "${String.format("%.1f", scale)}X"
