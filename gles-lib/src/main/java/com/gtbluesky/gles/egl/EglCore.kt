@@ -4,7 +4,6 @@ import android.graphics.SurfaceTexture
 import android.opengl.*
 import android.util.Log
 import android.view.Surface
-import kotlin.IllegalStateException
 
 
 /**
@@ -88,7 +87,8 @@ class EglCore @JvmOverloads constructor(sharedContext: EGLContext? = null, flags
         }
         // GLES 2 only, or GLES 3 attempt failed
         if (eglContext == EGL14.EGL_NO_CONTEXT) {
-            val config = getConfig(flags, 2) ?: throw IllegalStateException("Unable to find a suitable EGLConfig")
+            val config = getConfig(flags, 2)
+                ?: throw IllegalStateException("Unable to find a suitable EGLConfig")
             val attrib2List = intArrayOf(EGL14.EGL_CONTEXT_CLIENT_VERSION, 2, EGL14.EGL_NONE)
             val context = EGL14.eglCreateContext(
                 eglDisplay, config, sharedEglContext,
@@ -236,8 +236,12 @@ class EglCore @JvmOverloads constructor(sharedContext: EGLContext? = null, flags
             // called makeCurrent() before create?
             Log.d(TAG, "NOTE: makeCurrent w/o display")
         }
-        check(EGL14.eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext)) {
-            "eglMakeCurrent failed"
+        try {
+            check(EGL14.eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext)) {
+                "eglMakeCurrent failed"
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -249,8 +253,12 @@ class EglCore @JvmOverloads constructor(sharedContext: EGLContext? = null, flags
             // called makeCurrent() before create?
             Log.d(TAG, "NOTE: makeCurrent w/o display")
         }
-        check(EGL14.eglMakeCurrent(eglDisplay, drawSurface, readSurface, eglContext)) {
-            "eglMakeCurrent(draw,read) failed"
+        try {
+            check(EGL14.eglMakeCurrent(eglDisplay, drawSurface, readSurface, eglContext)) {
+                "eglMakeCurrent(draw,read) failed"
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -258,15 +266,19 @@ class EglCore @JvmOverloads constructor(sharedContext: EGLContext? = null, flags
      * Makes no context current.
      */
     fun makeNothingCurrent() {
-        check(
-            EGL14.eglMakeCurrent(
-                eglDisplay,
-                EGL14.EGL_NO_SURFACE,
-                EGL14.EGL_NO_SURFACE,
-                EGL14.EGL_NO_CONTEXT
-            )
-        ) {
-            "eglMakeCurrent failed"
+        try {
+            check(
+                EGL14.eglMakeCurrent(
+                    eglDisplay,
+                    EGL14.EGL_NO_SURFACE,
+                    EGL14.EGL_NO_SURFACE,
+                    EGL14.EGL_NO_CONTEXT
+                )
+            ) {
+                "eglMakeCurrent failed"
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
