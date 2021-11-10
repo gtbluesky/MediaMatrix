@@ -26,12 +26,12 @@ class CameraActivity : AppCompatActivity() {
         flashIv = findViewById(R.id.flash_iv)
 
         cameraView.holder.addCallback(object : SurfaceHolder.Callback {
-            override fun surfaceCreated(holder: SurfaceHolder?) {
+            override fun surfaceCreated(holder: SurfaceHolder) {
                 Camera2Engine.getInstance().startPreview(this@CameraActivity, cameraView.width, cameraView.height)
             }
 
             override fun surfaceChanged(
-                holder: SurfaceHolder?,
+                holder: SurfaceHolder,
                 format: Int,
                 width: Int,
                 height: Int
@@ -39,7 +39,7 @@ class CameraActivity : AppCompatActivity() {
 
             }
 
-            override fun surfaceDestroyed(holder: SurfaceHolder?) {
+            override fun surfaceDestroyed(holder: SurfaceHolder) {
                 Camera2Engine.getInstance().stopPreview()
             }
         })

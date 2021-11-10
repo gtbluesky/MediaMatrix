@@ -83,20 +83,20 @@ class EGLTestActivity : AppCompatActivity() {
         textureView = TextureView(this)
         setContentView(textureView)
         textureView.surfaceTextureListener = object : TextureView.SurfaceTextureListener {
-            override fun onSurfaceTextureSizeChanged(p0: SurfaceTexture?, p1: Int, p2: Int) {
+            override fun onSurfaceTextureSizeChanged(p0: SurfaceTexture, p1: Int, p2: Int) {
 
             }
 
-            override fun onSurfaceTextureUpdated(p0: SurfaceTexture?) {
+            override fun onSurfaceTextureUpdated(p0: SurfaceTexture) {
 
             }
 
-            override fun onSurfaceTextureDestroyed(p0: SurfaceTexture?): Boolean {
+            override fun onSurfaceTextureDestroyed(p0: SurfaceTexture): Boolean {
                 glLooper.postMessage(GLLooper.MSG_DESTROY)
                 return true
             }
 
-            override fun onSurfaceTextureAvailable(p0: SurfaceTexture?, p1: Int, p2: Int) {
+            override fun onSurfaceTextureAvailable(p0: SurfaceTexture, p1: Int, p2: Int) {
                 glLooper.postMessage(GLLooper.MSG_INIT, obj = Surface(p0))
                 glLooper.postMessage(GLLooper.MSG_CHANGE, p1, p2)
             }

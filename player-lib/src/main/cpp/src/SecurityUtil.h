@@ -10,6 +10,7 @@
 #include <openssl/buffer.h>
 #include <openssl/sha.h>
 #include <openssl/md5.h>
+#include <string.h>
 
 class SecurityUtil {
 

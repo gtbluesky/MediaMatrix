@@ -10,7 +10,8 @@
 # You can define multiple libraries, and CMake builds them for you.
 # Gradle automatically packages shared libraries with your APK.
 #aux_source_directory(${CMAKE_HOME_DIRECTORY} SRC_LIST)
-aux_source_directory(../json JSON_CPP_SRC_LIST)
+
+#aux_source_directory(../json JSON_CPP_SRC_LIST)
 aux_source_directory(../soundtouch SOUNDTOUCH_SRC_LIST)
 
 add_library( # Sets the name of the library.
@@ -41,33 +42,32 @@ set_target_properties(ffmpeg
         PROPERTIES IMPORTED_LOCATION
         ${CMAKE_SOURCE_DIR}/../nativeLibs/${ANDROID_ABI}/libffmpeg.so)
 
-
-#add_library(avcodec SHARED IMPORTED)
+#add_library(avcodec STATIC IMPORTED)
 #set_target_properties(avcodec
 #        PROPERTIES IMPORTED_LOCATION
-#        ${CMAKE_SOURCE_DIR}/../nativeLibs/${ANDROID_ABI}/libavcodec.so)
-
-#add_library(avformat SHARED IMPORTED)
+#        ${CMAKE_SOURCE_DIR}/../nativeLibs/${ANDROID_ABI}/libavcodec.a)
+#
+#add_library(avformat STATIC IMPORTED)
 #set_target_properties(avformat
 #        PROPERTIES IMPORTED_LOCATION
-#        ${CMAKE_SOURCE_DIR}/../nativeLibs/${ANDROID_ABI}/libavformat.so)
+#        ${CMAKE_SOURCE_DIR}/../nativeLibs/${ANDROID_ABI}/libavformat.a)
 #
 #
-#add_library(avutil SHARED IMPORTED)
+#add_library(avutil STATIC IMPORTED)
 #set_target_properties(avutil
 #        PROPERTIES IMPORTED_LOCATION
-#        ${CMAKE_SOURCE_DIR}/../nativeLibs/${ANDROID_ABI}/libavutil.so)
+#        ${CMAKE_SOURCE_DIR}/../nativeLibs/${ANDROID_ABI}/libavutil.a)
 #
-#add_library(swresample SHARED IMPORTED)
+#add_library(swresample STATIC IMPORTED)
 #set_target_properties(swresample
 #        PROPERTIES IMPORTED_LOCATION
-#        ${CMAKE_SOURCE_DIR}/../nativeLibs/${ANDROID_ABI}/libswresample.so)
+#        ${CMAKE_SOURCE_DIR}/../nativeLibs/${ANDROID_ABI}/libswresample.a)
 #
 #
-#add_library(swscale SHARED IMPORTED)
+#add_library(swscale STATIC IMPORTED)
 #set_target_properties(swscale
 #        PROPERTIES IMPORTED_LOCATION
-#        ${CMAKE_SOURCE_DIR}/../nativeLibs/${ANDROID_ABI}/libswscale.so)
+#        ${CMAKE_SOURCE_DIR}/../nativeLibs/${ANDROID_ABI}/libswscale.a)
 
 #add_library(curl STATIC IMPORTED)
 #set_target_properties(curl
@@ -93,8 +93,8 @@ set_target_properties(ssl
 target_link_libraries( # Specifies the target library.
         matrixplayer
         ffmpeg
-#        avcodec
 #        avformat
+#        avcodec
 #        avutil
 #        swresample
 #        swscale
