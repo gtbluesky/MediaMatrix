@@ -154,7 +154,7 @@ Java_com_gtbluesky_mediamatrix_player_MatrixPlayer_nativeSpeed(JNIEnv *env, jobj
 }
 
 JNIEXPORT jint JNICALL
-Java_com_gtbluesky_mediamatrix_player_MatrixPlayer_nativeGetSamplerate(JNIEnv *env, jobject instance) {
+Java_com_gtbluesky_mediamatrix_player_MatrixPlayer_nativeGetSampleRate(JNIEnv *env, jobject instance) {
     if (fFmpegController) {
         return fFmpegController->getSampleRate();
     }
